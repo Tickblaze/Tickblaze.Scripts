@@ -194,7 +194,6 @@ public sealed class StaticVolumeProfile : Drawing
 	private double _priorRightIndex = -1;
 	private int _priorIndex = int.MinValue;
 	private double _tickSize;
-	private bool _isFirstTickOfBar;
 
 	public StaticVolumeProfile()
 	{
@@ -207,17 +206,16 @@ public sealed class StaticVolumeProfile : Drawing
 	public override void OnRender(IDrawingContext context)
 	{
 		_tickSize = Bars == null || Bars.Symbol == null ? 0.25 : Bars.Symbol.TickSize;
-		var leftIndex = Chart.GetBarIndexByXCoordinate(Math.Min(Points[0].X, Points[1].X));
-		var rightIndex = Chart.GetBarIndexByXCoordinate(Math.Max(Points[0].X, Points[1].X));
+		var leftIndex = 0;
+		var rightIndex = 0;
+		var validBarIndexes = CalculateLeftAndRightIndexes(ref leftIndex, ref rightIndex, Points[0].X, Points[1].X);
 
-		// Gap bars are null
-		var validBarIndexes = Enumerable.Range(leftIndex, rightIndex - leftIndex)
-			.Where(i => Bars[i] != null)
-			.ToArray();
+		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Math.Min(Points[0].X, Points[1].X) > Chart.GetXCoordinateByBarIndex(Bars.Count - 1) || Math.Max(Points[0].X, Points[1].X) <= 0)
+		{
+			return;
+		}
 
-		leftIndex = validBarIndexes.FirstOrDefault(k => k >= leftIndex);
-		rightIndex = validBarIndexes.LastOrDefault(k => k <= rightIndex);
-
+		//if user moves the left point or the right point, recalculate the histo
 		if (_priorLeftIndex != leftIndex || _priorRightIndex != rightIndex)
 		{
 			_priorIndex = leftIndex;
@@ -227,8 +225,6 @@ public sealed class StaticVolumeProfile : Drawing
 			_profileLow = double.MaxValue;
 			_histo.Clear();
 		}
-
-		_isFirstTickOfBar = _priorIndex < rightIndex;
 
 		//Calculate _histo initially, adding the most recently finished bar to the histo (not the unfinished, developing bar)
 		for (var i = 0; i < validBarIndexes.Length; i++)
@@ -285,8 +281,8 @@ public sealed class StaticVolumeProfile : Drawing
 			var volumeSum = 0.0;
 			var typicalVolumeSum = 0.0;
 			var varianceSum = 0.0;
-			var pointL = new Point(0, 0);
-			var pointR = new Point(0, 0);
+			var vwapPointLeft = new Point(0, 0);
+			var vwapPointRight = new Point(0, 0);
 
 			if (leftIndex >= rightIndex - 1)
 			{
@@ -302,11 +298,11 @@ public sealed class StaticVolumeProfile : Drawing
 
 				if (i == 0)
 				{
-					pointR = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(typicalPrice));
+					vwapPointRight = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(typicalPrice));
 					volumeSum = bar.Volume;
 					foreach (var id in Enum.GetValues<VWAPIds>())
 					{
-						_priorUpperY[id] = _priorLowerY[id] = pointR.Y;
+						_priorUpperY[id] = _priorLowerY[id] = vwapPointRight.Y;
 					}
 
 					continue;
@@ -319,21 +315,17 @@ public sealed class StaticVolumeProfile : Drawing
 				var deviation = Math.Sqrt(Math.Max(varianceSum / (barIndex - leftIndex), 0));
 
 				//left-edge X pixel is set to the last print X pixel
-				pointL.X = pointR.X;
-				pointR.X = Chart.GetXCoordinateByBarIndex(barIndex);
-
-				var pHigh = new Point(pointR.X, ChartScale.GetYCoordinateByValue(bar.High));
-				var pLow = new Point(pointR.X, ChartScale.GetYCoordinateByValue(bar.Low));
-				context.DrawLine(pHigh, pLow, Color.White);
+				vwapPointLeft.X = vwapPointRight.X;
+				vwapPointRight.X = Chart.GetXCoordinateByBarIndex(barIndex);
 
 				foreach (var id in Enum.GetValues<VWAPIds>())
 				{
-					pointL.Y = _priorUpperY[id];
-					pointR.Y = ChartScale.GetYCoordinateByValue(curVWAP + deviation * _bandSettingsDict[id].Multiplier);
-					_priorUpperY[id] = pointR.Y;
+					vwapPointLeft.Y = _priorUpperY[id];
+					vwapPointRight.Y = ChartScale.GetYCoordinateByValue(curVWAP + deviation * _bandSettingsDict[id].Multiplier);
+					_priorUpperY[id] = vwapPointRight.Y;
 
 					//This draws the VWAP line, and the upper line for the bands
-					context.DrawLine(pointL, pointR, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
+					context.DrawLine(vwapPointLeft, vwapPointRight, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
 
 					//Draw the lower line plot only if this is band 1, 2 or 3
 					if (id == VWAPIds.VWAP)
@@ -341,10 +333,10 @@ public sealed class StaticVolumeProfile : Drawing
 						continue;
 					}
 
-					pointL.Y = _priorLowerY[id];
-					pointR.Y = ChartScale.GetYCoordinateByValue(curVWAP - deviation * _bandSettingsDict[id].Multiplier);
-					_priorLowerY[id] = pointR.Y;
-					context.DrawLine(pointL, pointR, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
+					vwapPointLeft.Y = _priorLowerY[id];
+					vwapPointRight.Y = ChartScale.GetYCoordinateByValue(curVWAP - deviation * _bandSettingsDict[id].Multiplier);
+					_priorLowerY[id] = vwapPointRight.Y;
+					context.DrawLine(vwapPointLeft, vwapPointRight, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
 				}
 			}
 		}
@@ -394,7 +386,7 @@ public sealed class StaticVolumeProfile : Drawing
 			}
 			else
 			{
-				pointRight.X = profileEndingX;
+				pointRight.X = Math.Max(Points[0].X, Points[1].X);
 				pointLeft.X = pointRight.X - maxHistoSizePx;
 			}
 
@@ -442,6 +434,29 @@ public sealed class StaticVolumeProfile : Drawing
 		}
 	}
 
+	private int[] CalculateLeftAndRightIndexes(ref int leftIndex, ref int rightIndex, double x1, double x2)
+	{
+		leftIndex = Math.Max(0, Math.Min(Bars.Count - 1, Chart.GetBarIndexByXCoordinate(Math.Min(x1, x2))));
+		rightIndex = Chart.GetBarIndexByXCoordinate(Math.Max(x1, x2));
+
+		//NOTE:  GetBarIndexByXCoordinate() returns -1 if the X coord exceeds the X of the rightmost bar
+		if (rightIndex == -1)
+		{
+			rightIndex = Bars.Count - 1;
+		}
+
+		// Gap bars are null
+		var validBarIndexes = Enumerable.Range(leftIndex, rightIndex - leftIndex)
+			.Where(i => Bars[i] != null)
+			.ToArray();
+
+		var index = leftIndex;
+		leftIndex = validBarIndexes.FirstOrDefault(k => k >= index);
+		index = rightIndex;
+		rightIndex = validBarIndexes.LastOrDefault(k => k <= index);
+		return validBarIndexes;
+	}
+
 	private void PrintLevelLineAndText(IDrawingContext context, char Align, Point pointLeft, double displayPrice, double linePrice, Color color, int lineThickness, double maxHistoSizePx)
 	{
 		if (color == Color.Empty || color.A == 0)
@@ -454,6 +469,7 @@ public sealed class StaticVolumeProfile : Drawing
 		pointLeft.Y = pointRight.Y = ChartScale.GetYCoordinateByValue(linePrice);
 		pointRight.X = pointLeft.X + maxHistoSizePx;
 		context.DrawLine(pointLeft, pointRight, color, lineThickness);
+
 		if (ShowLevelPrices)
 		{
 			var priceText = ChartScale.FormatPrice(displayPrice);
@@ -476,6 +492,7 @@ public sealed class StaticVolumeProfile : Drawing
 
 		histos[pocKey].IsInVA = true;
 		var targetVolume = totVol * ValueAreaPercent / 100.0;
+
 		while (vol < targetVolume && (ptrA.Count > 0 || ptrB.Count > 0))
 		{
 			if (ptrA.Count > 0)

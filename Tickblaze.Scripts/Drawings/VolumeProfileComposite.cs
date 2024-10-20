@@ -183,12 +183,14 @@ public sealed class CompositeVolumeProfile : Drawing
 			.ToArray();
 
 		Bar priorBar = null;
+
 		//Calculate _histo initially, adding the most recently finished bar to the histo (not the unfinished, developing bar)
 		for (var i = 1; i < validBarIndexes.Length; i++)
 		{
 			var barIndex = validBarIndexes[i];
 			var bar = Bars[barIndex];
 			var typicalPrice = (bar.High + bar.Low + bar.Close) / 3.0;
+
 			if (priorBar == null)
 			{
 				_profileId = barIndex;
@@ -208,12 +210,6 @@ public sealed class CompositeVolumeProfile : Drawing
 
 			priorBar = bar;
 
-			//==============================================================================
-			var pHigh = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(bar.High));
-			var pLow = new Point(pHigh.X, ChartScale.GetYCoordinateByValue(bar.Low));
-			context.DrawLine(pHigh, pLow, Color.White);
-			//==============================================================================
-
 			if (!_histos.TryGetValue(_profileId, out _))
 			{
 				_histos[_profileId] = [];
@@ -222,6 +218,7 @@ public sealed class CompositeVolumeProfile : Drawing
 			var sessionId = _profileId * 10000 + ToInteger(bar.Time, 60.0 / 2);
 			var volPerHisto = bar.Volume / (Math.Max(_tickSize, RoundToTick(bar.High - bar.Low)) / _tickSize);
 			var tickPtr = bar.Low;
+
 			while (tickPtr <= bar.High)
 			{
 				var key = (int)Math.Round(tickPtr / _tickSize);
@@ -354,6 +351,7 @@ public sealed class CompositeVolumeProfile : Drawing
 
 				var isLeftHisto = true;
 				var maxHistoSizePx = isLeftHisto ? (Chart.Width - Math.Max(0, profileStartingX)) * (HistoWidthPercent / 100.0) : Math.Min(Chart.Width - profileStartingX, Chart.Width * HistoWidthPercent / 100.0);
+				
 				if (profile.Key == profileIDLeft)
 				{
 					maxHistoSizePx = Math.Min(profileEndingX, maxHistoSizePx);
@@ -434,6 +432,7 @@ public sealed class CompositeVolumeProfile : Drawing
 		pointLeft.Y = pointRight.Y = ChartScale.GetYCoordinateByValue(linePrice);
 		pointRight.X = pointLeft.X + maxHistoSizePx;
 		context.DrawLine(pointLeft, pointRight, color, lineThickness);
+
 		if (ShowLevelPrices)
 		{
 			var priceText = ChartScale.FormatPrice(displayPrice);
@@ -456,6 +455,7 @@ public sealed class CompositeVolumeProfile : Drawing
 
 		histos[pocKey].IsInVA = true;
 		var targetVolume = totVol * ValueAreaPercent / 100.0;
+
 		while (vol < targetVolume && (ptrA.Count > 0 || ptrB.Count > 0))
 		{
 			if (ptrA.Count > 0)
