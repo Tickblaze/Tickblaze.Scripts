@@ -100,16 +100,24 @@ public sealed class AnchoredVWAP : Drawing
 		{
 			context.DrawLine(Points[0], Points[1], AnchorLineColor, AnchorLineThickness, AnchorLineStyle);
 
-			foreach (var pt in Points)
-			{
-				var isHigh = pt == Points[0];
-				var bar = Chart.GetBarIndexByXCoordinate(Points[0].X);
-				context.DrawText(Points[0], $"{(isHigh ? "High" : "Low")} @ {bar}: {Bars.Symbol.FormatPrice(isHigh ? Bars[bar].High : Bars[bar].Low)}  time: {Bars[bar].Time.ToLocalTime()}", Color.White);
-			}
+			//foreach (var pt in Points)
+			//{
+			//	var isHigh = pt == Points[0];
+			//	var bar = Chart.GetBarIndexByXCoordinate(Points[0].X);
+			//	context.DrawText(Points[0], $"{(isHigh ? "High" : "Low")} @ {bar}: {Bars.Symbol.FormatPrice(isHigh ? Bars[bar].High : Bars[bar].Low)}  time: {Bars[bar].Time.ToLocalTime()}", Color.White);
+			//}
 		}
 
 		var leftIndex = Math.Max(0, Math.Min(Bars.Count - 1, Chart.GetBarIndexByXCoordinate(Math.Min(Points[0].X, Points[1].X))));
-		var rightIndex = Math.Max(1, ExtendToCurrentBar ? (Bars == null ? 100 : Bars.Count - 1) : Math.Min(Bars.Count - 1, Chart.GetBarIndexByXCoordinate(Math.Max(Points[0].X, Points[1].X))));
+		var lastBarXCoord = Chart.GetXCoordinateByBarIndex(Bars.Count - 1);
+		var indexOfRighmostPoint = Chart.GetBarIndexByXCoordinate(Math.Max(Points[0].X, Points[1].X));
+		//NOTE:  GetBarIndexByXCoordinate() returns -1 if the X coord exceeds the X of the rightmost bar
+		if (indexOfRighmostPoint == -1)
+		{
+			indexOfRighmostPoint = Bars.Count - 1;
+		}
+		var rightmostXCoord = Chart.GetXCoordinateByBarIndex(indexOfRighmostPoint);
+		var rightIndex = Math.Max(1, ExtendToCurrentBar ? Bars.Count - 1 : indexOfRighmostPoint);
 
 		var volumeSum = 0.0;
 		var typicalVolumeSum = 0.0;
@@ -126,18 +134,18 @@ public sealed class AnchoredVWAP : Drawing
 		var validBarIndexes = Enumerable.Range(leftIndex, rightIndex - leftIndex)
 			.Where(i => Bars[i] != null)
 			.ToArray();
+		context.DrawText(Points[0], $" Bars.Count {Bars.Count}  left index {leftIndex}   Chart.LastVisBarIndex {Chart.LastVisibleBarIndex}  validBarIndexesMax {validBarIndexes.Max()}", Color.White);
 
 		for (var i = 0; i < validBarIndexes.Length; i++)
 		{
 			var barIndex = validBarIndexes[i];
 			var bar = Bars[barIndex];
-			var volume = bar.Volume;
 			var typicalPrice = (bar.High + bar.Low + bar.Close) / 3;
-			typicalVolumeSum += volume * typicalPrice;
+			typicalVolumeSum += bar.Volume * typicalPrice;
 
 			if (i == 0)
 			{
-				volumeSum = volume;
+				volumeSum = bar.Volume;
 				pointR = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(typicalPrice));
 
 				//left-edge of all plots start out at the same Y pixel
@@ -149,7 +157,7 @@ public sealed class AnchoredVWAP : Drawing
 				continue;
 			}
 
-			volumeSum += volume;
+			volumeSum += bar.Volume;
 			var curVWAP = typicalVolumeSum / volumeSum;
 			var diff = typicalPrice - curVWAP;
 			varianceSum += diff * diff;
@@ -158,6 +166,7 @@ public sealed class AnchoredVWAP : Drawing
 			//left-edge X pixel is set to the last print X pixel
 			pointL.X = pointR.X;
 			pointR.X = Chart.GetXCoordinateByBarIndex(barIndex);
+
 			foreach (var id in Enum.GetValues<VWAPIds>())
 			{
 				pointL.Y = _priorUpperY[id];
