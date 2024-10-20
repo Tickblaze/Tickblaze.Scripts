@@ -99,33 +99,22 @@ public sealed class AnchoredVWAP : Drawing
 		if (AnchorLineThickness > 0)
 		{
 			context.DrawLine(Points[0], Points[1], AnchorLineColor, AnchorLineThickness, AnchorLineStyle);
-
-			foreach (var pt in Points)
-			{
-				var isHigh = pt == Points[0];
-				var bar = Chart.GetBarIndexByXCoordinate(Points[0].X);
-				context.DrawText(Points[0], $"{(isHigh ? "High" : "Low")} @ {bar}: {Bars.Symbol.FormatPrice(isHigh ? Bars[bar].High : Bars[bar].Low)}  time: {Bars[bar].Time.ToLocalTime()}", Color.White);
-			}
 		}
 
-		var leftIndex = Math.Max(0, Math.Min(Bars.Count - 1, Chart.GetBarIndexByXCoordinate(Math.Min(Points[0].X, Points[1].X))));
-		var rightIndex = Math.Max(1, ExtendToCurrentBar ? (Bars == null ? 100 : Bars.Count - 1) : Math.Min(Bars.Count - 1, Chart.GetBarIndexByXCoordinate(Math.Max(Points[0].X, Points[1].X))));
+		var leftIndex = 0;
+		var rightIndex = 0;
+		var validBarIndexes = CalculateLeftAndRightIndexes(ref leftIndex, ref rightIndex, Points[0].X, Points[1].X);
 
-		var volumeSum = 0.0;
-		var typicalVolumeSum = 0.0;
-		var varianceSum = 0.0;
-		var pointL = new Point(0, 0);
-		var pointR = new Point(0, 0);
-
-		if (leftIndex >= rightIndex - 1)
+		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Math.Min(Points[0].X, Points[1].X) > Chart.GetXCoordinateByBarIndex(Bars.Count - 1) || Math.Max(Points[0].X, Points[1].X) <= 0)
 		{
 			return;
 		}
 
-		// Gap bars are null
-		var validBarIndexes = Enumerable.Range(leftIndex, rightIndex - leftIndex)
-			.Where(i => Bars[i] != null)
-			.ToArray();
+		var volumeSum = 0.0;
+		var typicalVolumeSum = 0.0;
+		var varianceSum = 0.0;
+		var vwapPointLeft = new Point(0, 0);
+		var vwapPointRight = new Point(0, 0);
 
 		for (var i = 0; i < validBarIndexes.Length; i++)
 		{
@@ -137,13 +126,13 @@ public sealed class AnchoredVWAP : Drawing
 
 			if (i == 0)
 			{
-				volumeSum = volume;
-				pointR = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(typicalPrice));
+				volumeSum = bar.Volume;
+				vwapPointRight = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(typicalPrice));
 
 				//left-edge of all plots start out at the same Y pixel
 				foreach (var id in Enum.GetValues<VWAPIds>())
 				{
-					_priorUpperY[id] = _priorLowerY[id] = pointR.Y;
+					_priorUpperY[id] = _priorLowerY[id] = vwapPointRight.Y;
 				}
 
 				continue;
@@ -156,14 +145,15 @@ public sealed class AnchoredVWAP : Drawing
 			var deviation = Math.Sqrt(Math.Max(varianceSum / (i + 1), 0));
 
 			//left-edge X pixel is set to the last print X pixel
-			pointL.X = pointR.X;
-			pointR.X = Chart.GetXCoordinateByBarIndex(barIndex);
+			vwapPointLeft.X = vwapPointRight.X;
+			vwapPointRight.X = Chart.GetXCoordinateByBarIndex(barIndex);
+
 			foreach (var id in Enum.GetValues<VWAPIds>())
 			{
-				pointL.Y = _priorUpperY[id];
-				pointR.Y = ChartScale.GetYCoordinateByValue(curVWAP + deviation * _bandSettingsDict[id].Multiplier);
-				_priorUpperY[id] = pointR.Y;
-				context.DrawLine(pointL, pointR, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
+				vwapPointLeft.Y = _priorUpperY[id];
+				vwapPointRight.Y = ChartScale.GetYCoordinateByValue(curVWAP + deviation * _bandSettingsDict[id].Multiplier);
+				_priorUpperY[id] = vwapPointRight.Y;
+				context.DrawLine(vwapPointLeft, vwapPointRight, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
 
 				//Draw the lower line plot only if this is band 1, 2 or 3
 				if (id == VWAPIds.VWAP)
@@ -171,14 +161,35 @@ public sealed class AnchoredVWAP : Drawing
 					continue;
 				}
 
-				pointL.Y = _priorLowerY[id];
-				pointR.Y = ChartScale.GetYCoordinateByValue(curVWAP - deviation * _bandSettingsDict[id].Multiplier);
-				_priorLowerY[id] = pointR.Y;
-				context.DrawLine(pointL, pointR, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
+				vwapPointLeft.Y = _priorLowerY[id];
+				vwapPointRight.Y = ChartScale.GetYCoordinateByValue(curVWAP - deviation * _bandSettingsDict[id].Multiplier);
+				_priorLowerY[id] = vwapPointRight.Y;
+				context.DrawLine(vwapPointLeft, vwapPointRight, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
 			}
 		}
 	}
+	private int[] CalculateLeftAndRightIndexes(ref int leftIndex, ref int rightIndex, double x1, double x2)
+	{
+		leftIndex = Math.Max(0, Math.Min(Bars.Count - 1, Chart.GetBarIndexByXCoordinate(Math.Min(x1, x2))));
+		rightIndex = Chart.GetBarIndexByXCoordinate(Math.Max(x1, x2));
 
+		//NOTE:  GetBarIndexByXCoordinate() returns -1 if the X coord exceeds the X of the rightmost bar
+		if (rightIndex == -1)
+		{
+			rightIndex = Bars.Count - 1;
+		}
+
+		// Gap bars are null
+		var validBarIndexes = Enumerable.Range(leftIndex, rightIndex - leftIndex)
+			.Where(i => Bars[i] != null)
+			.ToArray();
+
+		var index = leftIndex;
+		leftIndex = validBarIndexes.FirstOrDefault(k => k >= index);
+		index = rightIndex;
+		rightIndex = validBarIndexes.LastOrDefault(k => k <= index);
+		return validBarIndexes;
+	}
 	private enum VWAPIds
 	{
 		VWAP,
