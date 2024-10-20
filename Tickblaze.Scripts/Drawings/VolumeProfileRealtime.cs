@@ -1,6 +1,6 @@
 ﻿namespace Tickblaze.Scripts.Drawings;
 
-public sealed class StaticVolumeProfile : Drawing
+public sealed class RealtimeVolumeProfile : Drawing
 {
 	public enum HistoEdge { Left, Right }
 	public enum AnchorType { Line, Rectangle, Both, Hidden }
@@ -119,7 +119,7 @@ public sealed class StaticVolumeProfile : Drawing
 	[Parameter("Anchor Type")]
 	public AnchorType AnchorBoundsType { get; set; } = AnchorType.Rectangle;
 
-	public override int PointsCount => 2;
+	public override int PointsCount => 1;
 
 	private readonly Dictionary<VWAPIds, BandSettings> _bandSettingsDict = new()
 	{
@@ -177,17 +177,6 @@ public sealed class StaticVolumeProfile : Drawing
 	}
 	private SortedDictionary<int, HistoData> _histo = [];
 
-	private class VWAPlinedata(double mult, Color lineColor, int lineThickness, LineStyle lineStyle)
-	{
-		public double Mult = mult;
-		public double PriorUpperY = 0;
-		public double PriorLowerY = 0;
-		public Color LineColor = lineColor;
-		public int LineThickness = lineThickness;
-		public LineStyle Style = lineStyle;
-	}
-	private Dictionary<VWAPIds, VWAPlinedata> _vwaps = [];
-
 	private double _profileHigh;
 	private double _profileLow;
 	private double _priorLeftIndex = -1;
@@ -196,9 +185,9 @@ public sealed class StaticVolumeProfile : Drawing
 	private double _tickSize;
 	private bool _isFirstTickOfBar;
 
-	public StaticVolumeProfile()
+	public RealtimeVolumeProfile()
 	{
-		Name = "Volume Profile - Static";
+		Name = "Volume Profile - Realtime";
 	}
 
 	private readonly Dictionary<VWAPIds, double> _priorLowerY = [];
@@ -207,8 +196,8 @@ public sealed class StaticVolumeProfile : Drawing
 	public override void OnRender(IDrawingContext context)
 	{
 		_tickSize = Bars == null || Bars.Symbol == null ? 0.25 : Bars.Symbol.TickSize;
-		var leftIndex = Chart.GetBarIndexByXCoordinate(Math.Min(Points[0].X, Points[1].X));
-		var rightIndex = Chart.GetBarIndexByXCoordinate(Math.Max(Points[0].X, Points[1].X));
+		var leftIndex = Chart.GetBarIndexByXCoordinate(Points[0].X);
+		var rightIndex = Chart.LastVisibleBarIndex;
 
 		// Gap bars are null
 		var validBarIndexes = Enumerable.Range(leftIndex, rightIndex - leftIndex)
@@ -263,7 +252,7 @@ public sealed class StaticVolumeProfile : Drawing
 		var isPrintable2 = profileEndingX > 0;
 
 		var pointLeft = new Point(profileStartingX, Points[0].Y);
-		var pointRight = new Point(profileEndingX, Points[1].Y);
+		var pointRight = new Point(profileEndingX, Points[0].Y);
 
 		if (isPrintable1 && isPrintable2)
 		{
@@ -379,7 +368,6 @@ public sealed class StaticVolumeProfile : Drawing
 
 			var isLeftHisto = HistoLocation == HistoEdge.Left;
 			var maxHistoSizePx = isLeftHisto ? (Chart.Width - Math.Max(0, profileStartingX)) * (HistoWidthPercent / 100.0) : Math.Min(Chart.Width - profileStartingX, Chart.Width * HistoWidthPercent / 100.0);
-			maxHistoSizePx = Math.Min(maxHistoSizePx, Math.Abs(Points[0].X - Points[1].X));
 			var pointOfControlKey = GetPOCKey(renderHisto);
 			var pocPrice = renderHisto[pointOfControlKey].MidPrice;
 			renderHisto.Values.ToList().ForEach(k => k.IsInVA = false);
