@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Tickblaze.Scripts/Drawings/AnchoredVWAP2.cs
+/Tickblaze.Scripts/Indicators/BigRoundNumbers.cs
