@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Tickblaze.Scripts/Drawings/VolumeProfileComposite.cs
+/Tickblaze.Scripts/Drawings/VolumeProfileRealtime.cs
+/Tickblaze.Scripts/Tickblaze.Scripts.csproj

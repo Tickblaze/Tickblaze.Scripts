@@ -1,13 +1,8 @@
 ﻿
-using Tickblaze.Scripts.Indicators;
-
 namespace Tickblaze.Scripts.Drawings;
 
 public sealed class AnchoredVWAP : Drawing
 {
-	[Parameter("Extend to current bar")]
-	public bool ExtendToCurrentBar { get; set; } = false;
-
 	[Parameter("VWAP Line Color")]
 	public Color VWAPLineColor { get => _bandSettingsDict[VWAPIds.VWAP].Color; set => _bandSettingsDict[VWAPIds.VWAP].Color = value; }
 
@@ -18,7 +13,7 @@ public sealed class AnchoredVWAP : Drawing
 	public LineStyle VWAPLineStyle { get => _bandSettingsDict[VWAPIds.VWAP].LineStyle; set => _bandSettingsDict[VWAPIds.VWAP].LineStyle = value; }
 
 	[Parameter("Band 1 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band1Mult { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
+	public double Band1Multiplier { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
 
 	[Parameter("Band 1 Color")]
 	public Color Band1Color { get => _bandSettingsDict[VWAPIds.Band1].Color; set => _bandSettingsDict[VWAPIds.Band1].Color = value; }
@@ -30,7 +25,7 @@ public sealed class AnchoredVWAP : Drawing
 	public LineStyle Band1LineStyle { get => _bandSettingsDict[VWAPIds.Band1].LineStyle; set => _bandSettingsDict[VWAPIds.Band1].LineStyle = value; }
 
 	[Parameter("Band 2 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band2Mult { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
+	public double Band2Multiplier { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
 
 	[Parameter("Band 2 Color")]
 	public Color Band2Color { get => _bandSettingsDict[VWAPIds.Band2].Color; set => _bandSettingsDict[VWAPIds.Band2].Color = value; }
@@ -42,7 +37,7 @@ public sealed class AnchoredVWAP : Drawing
 	public LineStyle Band2LineStyle { get => _bandSettingsDict[VWAPIds.Band2].LineStyle; set => _bandSettingsDict[VWAPIds.Band2].LineStyle = value; }
 
 	[Parameter("Band 3 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band3Mult { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
+	public double Band3Multiplier { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
 
 	[Parameter("Band 3 Color")]
 	public Color Band3Color { get => _bandSettingsDict[VWAPIds.Band3].Color; set => _bandSettingsDict[VWAPIds.Band3].Color = value; }
@@ -53,22 +48,14 @@ public sealed class AnchoredVWAP : Drawing
 	[Parameter("Band 3 Line Style")]
 	public LineStyle Band3LineStyle { get => _bandSettingsDict[VWAPIds.Band3].LineStyle; set => _bandSettingsDict[VWAPIds.Band3].LineStyle = value; }
 
-	[Parameter("Anchor line Color")]
-	public Color AnchorLineColor { get; set; } = Color.DimGray;
-
-	[Parameter("Anchor Line Thickness"), NumericRange(0, 5)]
-	public int AnchorLineThickness { get; set; } = 1;
-
-	[Parameter("Anchor Line Style")]
-	public LineStyle AnchorLineStyle { get; set; } = LineStyle.Solid;
-
-	public override int PointsCount => 2;
+	public override int PointsCount => 1;
 
 	private readonly Dictionary<VWAPIds, BandSettings> _bandSettingsDict = new()
 	{
 		[VWAPIds.VWAP] = new BandSettings
 		{
-			Color = Color.Cyan
+			Color = Color.Cyan,
+			Thickness = 1
 		},
 		[VWAPIds.Band1] = new BandSettings
 		{
@@ -96,16 +83,11 @@ public sealed class AnchoredVWAP : Drawing
 	private readonly Dictionary<VWAPIds, double> _priorUpperY = [];
 	public override void OnRender(IDrawingContext context)
 	{
-		if (AnchorLineThickness > 0)
-		{
-			context.DrawLine(Points[0], Points[1], AnchorLineColor, AnchorLineThickness, AnchorLineStyle);
-		}
-
 		var leftIndex = 0;
 		var rightIndex = 0;
-		var validBarIndexes = CalculateLeftAndRightIndexes(ref leftIndex, ref rightIndex, Points[0].X, Points[1].X);
+		var validBarIndexes = CalculateLeftAndRightIndexes(ref leftIndex, ref rightIndex, Points[0].X);
 
-		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Math.Min(Points[0].X, Points[1].X) > Chart.GetXCoordinateByBarIndex(Bars.Count - 1) || Math.Max(Points[0].X, Points[1].X) <= 0)
+		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Points[0].X > Chart.GetXCoordinateByBarIndex(Bars.Count - 1) || Points[0].X <= 0)
 		{
 			return;
 		}
@@ -168,10 +150,10 @@ public sealed class AnchoredVWAP : Drawing
 			}
 		}
 	}
-	private int[] CalculateLeftAndRightIndexes(ref int leftIndex, ref int rightIndex, double x1, double x2)
+	private int[] CalculateLeftAndRightIndexes(ref int leftIndex, ref int rightIndex, double x1)
 	{
-		leftIndex = Math.Max(0, Math.Min(Bars.Count - 1, Chart.GetBarIndexByXCoordinate(Math.Min(x1, x2))));
-		rightIndex = Chart.GetBarIndexByXCoordinate(Math.Max(x1, x2));
+		leftIndex = Math.Max(0, Math.Min(Bars.Count - 1, Chart.GetBarIndexByXCoordinate(x1)));
+		rightIndex = Bars.Count - 1;
 
 		//NOTE:  GetBarIndexByXCoordinate() returns -1 if the X coord exceeds the X of the rightmost bar
 		if (rightIndex == -1)
@@ -202,7 +184,7 @@ public sealed class AnchoredVWAP : Drawing
 	{
 		public double Multiplier { get; set; }
 		public Color Color { get; set; }
-		public int Thickness { get; set; } = 1;
+		public int Thickness { get; set; } = 0;
 		public LineStyle LineStyle { get; set; } = LineStyle.Solid;
 	}
 }
