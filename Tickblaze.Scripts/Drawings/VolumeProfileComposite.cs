@@ -69,7 +69,7 @@ public sealed class CompositeVolumeProfile : Drawing
 	public LineStyle VWAPLineStyle { get => _bandSettingsDict[VWAPIds.VWAP].LineStyle; set => _bandSettingsDict[VWAPIds.VWAP].LineStyle = value; }
 
 	[Parameter("Band 1 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band1Mult { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
+	public double Band1Multiplier { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
 
 	[Parameter("Band 1 Color")]
 	public Color Band1Color { get => _bandSettingsDict[VWAPIds.Band1].Color; set => _bandSettingsDict[VWAPIds.Band1].Color = value; }
@@ -81,7 +81,7 @@ public sealed class CompositeVolumeProfile : Drawing
 	public LineStyle Band1LineStyle { get => _bandSettingsDict[VWAPIds.Band1].LineStyle; set => _bandSettingsDict[VWAPIds.Band1].LineStyle = value; }
 
 	[Parameter("Band 2 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band2Mult { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
+	public double Band2Multiplier { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
 
 	[Parameter("Band 2 Color")]
 	public Color Band2Color { get => _bandSettingsDict[VWAPIds.Band2].Color; set => _bandSettingsDict[VWAPIds.Band2].Color = value; }
@@ -93,7 +93,7 @@ public sealed class CompositeVolumeProfile : Drawing
 	public LineStyle Band2LineStyle { get => _bandSettingsDict[VWAPIds.Band2].LineStyle; set => _bandSettingsDict[VWAPIds.Band2].LineStyle = value; }
 
 	[Parameter("Band 3 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band3Mult { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
+	public double Band3Multiplier { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
 
 	[Parameter("Band 3 Color")]
 	public Color Band3Color { get => _bandSettingsDict[VWAPIds.Band3].Color; set => _bandSettingsDict[VWAPIds.Band3].Color = value; }
@@ -163,17 +163,24 @@ public sealed class CompositeVolumeProfile : Drawing
 	private SortedDictionary<int, SortedDictionary<int, HistoData>> _histos = [];
 
 	private int _priorIndex = int.MinValue;
-	private double _tickSize;
 	private int _profileId;
+	private VolumeProfileTimeframe _tf = VolumeProfileTimeframe.Daily;
 
 	public CompositeVolumeProfile()
 	{
 		Name = "Volume Profile - Composite";
+		_tf = Timeframe;
 	}
 
 	public override void OnRender(IDrawingContext context)
 	{
-		_tickSize = Bars == null || Bars.Symbol == null ? 0.25 : Bars.Symbol.TickSize;
+		if(_tf != Timeframe)
+		{
+			//if user changed the Timeframe parameter, clear out the old _histos data
+			_histos.Clear();
+			_tf = Timeframe;
+		}
+
 		var leftIndex = 0;
 		var rightIndex = Bars == null ? leftIndex + 5000 : Bars.Count - 1;
 
@@ -216,19 +223,19 @@ public sealed class CompositeVolumeProfile : Drawing
 			}
 
 			var sessionId = _profileId * 10000 + ToInteger(bar.Time, 60.0 / 2);
-			var volPerHisto = bar.Volume / (Math.Max(_tickSize, RoundToTick(bar.High - bar.Low)) / _tickSize);
+			var volPerHisto = bar.Volume / (Math.Max(Bars.Symbol.TickSize, Bars.Symbol.RoundToTick(bar.High - bar.Low)) / Bars.Symbol.TickSize);
 			var tickPtr = bar.Low;
 
 			while (tickPtr <= bar.High)
 			{
-				var key = (int)Math.Round(tickPtr / _tickSize);
+				var key = (int)Math.Round(tickPtr / Bars.Symbol.TickSize);
 				if (!_histos[_profileId].TryGetValue(key, out _))
 				{
-					_histos[_profileId][key] = new HistoData(tickPtr + _tickSize / 2.0, tickPtr - _tickSize / 2.0, sessionId);
+					_histos[_profileId][key] = new HistoData(tickPtr + Bars.Symbol.TickSize / 2.0, tickPtr - Bars.Symbol.TickSize / 2.0, sessionId);
 				}
 
 				_histos[_profileId][key].AddVolume(sessionId, volPerHisto);
-				tickPtr += _tickSize;
+				tickPtr += Bars.Symbol.TickSize;
 			}
 		}
 
@@ -260,7 +267,7 @@ public sealed class CompositeVolumeProfile : Drawing
 			var pointLeft = new Point(profileStartingX, 0);
 			var pointRight = new Point(profileEndingX, 0);
 
-			if (EnableVWAP && isPrintable1 && isPrintable2 && (Band1Mult > 0 || Band2Mult > 0 || Band3Mult > 0))
+			if (EnableVWAP && isPrintable1 && isPrintable2 && (Band1Multiplier > 0 || Band2Multiplier > 0 || Band3Multiplier > 0))
 			{
 				var volumeSum = 0.0;
 				var varianceSum = 0.0;
@@ -332,9 +339,9 @@ public sealed class CompositeVolumeProfile : Drawing
 				{
 					renderHisto = [];
 					var groupMinPrice = profile.Value[profile.Value.Keys.Min()].MinPrice;
-					var groupMaxPrice = groupMinPrice + HistoThicknessTicks * _tickSize;
+					var groupMaxPrice = groupMinPrice + HistoThicknessTicks * Bars.Symbol.TickSize;
 					var histoGroup = profile.Value.Where(k => k.Value.MaxPrice <= groupMaxPrice).Select(k => k.Key).ToList();
-					var key = (int)Math.Round(groupMinPrice / _tickSize);
+					var key = (int)Math.Round(groupMinPrice / Bars.Symbol.TickSize);
 
 					while (key <= profile.Value.Keys.Max())
 					{
@@ -343,9 +350,9 @@ public sealed class CompositeVolumeProfile : Drawing
 						renderHisto[key].VolTotal = histoGroupVol;
 
 						groupMinPrice = groupMaxPrice;
-						groupMaxPrice = groupMinPrice + HistoThicknessTicks * _tickSize;
+						groupMaxPrice = groupMinPrice + HistoThicknessTicks * Bars.Symbol.TickSize;
 						histoGroup = profile.Value.Where(k => k.Value.MinPrice >= groupMinPrice && k.Value.MaxPrice <= groupMaxPrice).Select(k => k.Key).ToList();
-						key = (int)Math.Round(groupMinPrice / _tickSize);
+						key = (int)Math.Round(groupMinPrice / Bars.Symbol.TickSize);
 					}
 				}
 
@@ -428,7 +435,7 @@ public sealed class CompositeVolumeProfile : Drawing
 		}
 
 		var pointRight = new Point(0, 0);
-		displayPrice = RoundToTick(displayPrice);
+		displayPrice = Bars.Symbol.RoundToTick(displayPrice);
 		pointLeft.Y = pointRight.Y = ChartScale.GetYCoordinateByValue(linePrice);
 		pointRight.X = pointLeft.X + maxHistoSizePx;
 		context.DrawLine(pointLeft, pointRight, color, lineThickness);
@@ -476,18 +483,7 @@ public sealed class CompositeVolumeProfile : Drawing
 		HistosInVAH = ptrB.Count;
 		HistosInVAL = ptrA.Count;
 	}
-	private double RoundToTick(double p)
-	{
-		if (Bars == null || Bars.Symbol == null)
-		{
-			var tk = (int)Math.Round(p / _tickSize);
-			return tk * _tickSize;
-		}
-		else
-		{
-			return Bars.Symbol.RoundToTick(p);
-		}
-	}
+
 	private static int ToInteger(DateTime t, double minutesPerSession)
 	{
 		return (int)(t.Hour * 100 + Math.Floor(t.Minute / minutesPerSession) * minutesPerSession);
