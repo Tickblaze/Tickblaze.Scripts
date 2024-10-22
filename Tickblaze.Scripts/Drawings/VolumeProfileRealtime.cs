@@ -125,7 +125,8 @@ public sealed class RealtimeVolumeProfile : Drawing
 	{
 		[VWAPIds.VWAP] = new BandSettings
 		{
-			Color = Color.Cyan
+			Color = Color.Cyan,
+			Thickness = 1
 		},
 		[VWAPIds.Band1] = new BandSettings
 		{
@@ -468,7 +469,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 		}
 
 		var pointRight = new Point(0, 0);
-		displayPrice = RoundToTick(displayPrice);
+		displayPrice = Bars.Symbol.RoundToTick(displayPrice);
 		pointLeft.Y = pointRight.Y = ChartScale.GetYCoordinateByValue(linePrice);
 		pointRight.X = pointLeft.X + maxHistoSizePx;
 		context.DrawLine(pointLeft, pointRight, color, lineThickness);
@@ -516,18 +517,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 		HistosInVAH = ptrB.Count;
 		HistosInVAL = ptrA.Count;
 	}
-	private double RoundToTick(double p)
-	{
-		if (Bars == null || Bars.Symbol == null)
-		{
-			var tk = (int)Math.Round(p / Bars.Symbol.TickSize);
-			return tk * Bars.Symbol.TickSize;
-		}
-		else
-		{
-			return Bars.Symbol.RoundToTick(p);
-		}
-	}
+
 	private static int ToInteger(DateTime t, double minutesPerSession)
 	{
 		return (int)(t.Hour * 100 + Math.Floor(t.Minute / minutesPerSession) * minutesPerSession);

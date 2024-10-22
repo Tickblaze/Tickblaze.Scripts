@@ -175,6 +175,7 @@ public sealed class CompositeVolumeProfile : Drawing
 	{
 		Name = "Volume Profile - Composite";
 		_tf = Timeframe;
+		_priorStartTimeShiftHours = StartTimeShiftHours;
 	}
 
 	public override void OnRender(IDrawingContext context)
