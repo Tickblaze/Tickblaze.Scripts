@@ -24,7 +24,7 @@ public sealed class ManualVolumeProfile : Drawing
 	public HistoEdge HistoLocation { get; set; } = HistoEdge.Left;
 
 	[Parameter("Histo Width (%)"), NumericRange(0, 100)]
-	public int HistoWidthPercent { get; set; } = 20;
+	public int HistoWidthPercent { get; set; } = 90;
 
 	[Parameter("Show POC Level")]
 	public bool ShowPOCLevel { get; set; } = false;
@@ -190,10 +190,11 @@ public sealed class ManualVolumeProfile : Drawing
 
 	private double _profileHigh;
 	private double _profileLow;
+	private double _priorProfileHigh;
+	private double _priorProfileLow;
 	private double _priorLeftIndex = -1;
 	private double _priorRightIndex = -1;
 	private int _priorIndex = int.MinValue;
-	private double _tickSize;
 
 	public ManualVolumeProfile()
 	{
@@ -205,7 +206,6 @@ public sealed class ManualVolumeProfile : Drawing
 
 	public override void OnRender(IDrawingContext context)
 	{
-		_tickSize = Bars == null || Bars.Symbol == null ? 0.25 : Bars.Symbol.TickSize;
 		var leftIndex = 0;
 		var rightIndex = 0;
 		var validBarIndexes = CalculateLeftAndRightIndexes(ref leftIndex, ref rightIndex, Points[0].X, Points[1].X);
@@ -236,19 +236,28 @@ public sealed class ManualVolumeProfile : Drawing
 			_profileHigh = Math.Max(high, _profileHigh);
 			var low = bar.Low;
 			_profileLow = Math.Min(low, _profileLow);
-			var volPerHisto = bar.Volume / (Math.Max(_tickSize, Bars.Symbol.RoundToTick(high - low)) / _tickSize);
+			var volPerHisto = bar.Volume / (Math.Max(Bars.Symbol.TickSize, high - low) / Bars.Symbol.TickSize);
 			var tickPtr = low;
+
 			while (tickPtr <= high)
 			{
-				var key = (int)Math.Round(tickPtr / _tickSize);
+				var key = (int)Math.Round(tickPtr / Bars.Symbol.TickSize);
 				if (!_histo.TryGetValue(key, out _))
 				{
-					_histo[key] = new HistoData(tickPtr + _tickSize / 2.0, tickPtr - _tickSize / 2.0, sessionId);
+					_histo[key] = new HistoData(tickPtr + Bars.Symbol.TickSize / 2.0, tickPtr - Bars.Symbol.TickSize / 2.0, sessionId);
 				}
 
 				_histo[key].AddVolume(sessionId, volPerHisto);
-				tickPtr += _tickSize;
+				tickPtr += Bars.Symbol.TickSize;
 			}
+		}
+
+		//update the Y value of the anchor points only if necessary - has performance gains
+		if (_profileHigh != _priorProfileHigh || _profileLow != _priorProfileLow)
+		{
+			Points[0].Y = Points[1].Y = ChartScale.GetYCoordinateByValue((_profileHigh + _profileLow) / 2.0);
+			_priorProfileHigh = _profileHigh;
+			_priorProfileLow = _profileLow;
 		}
 
 		_priorIndex = rightIndex;
@@ -275,7 +284,6 @@ public sealed class ManualVolumeProfile : Drawing
 				context.DrawRectangle(pointLeft, pointRight, Color.Empty, AnchorLineColor, AnchorLineThickness, AnchorLineStyle);
 			}
 		}
-		Points[0].Y = Points[1].Y = (pointLeft.Y + pointRight.Y) / 2.0;
 
 		profileStartingX = Chart.GetXCoordinateByBarIndex(leftIndex);
 		profileEndingX = Chart.GetXCoordinateByBarIndex(rightIndex);
@@ -356,9 +364,9 @@ public sealed class ManualVolumeProfile : Drawing
 			{
 				renderHisto = [];
 				var groupMinPrice = _histo[_histo.Keys.Min()].MinPrice;
-				var groupMaxPrice = groupMinPrice + HistoThicknessTicks * _tickSize;
+				var groupMaxPrice = groupMinPrice + HistoThicknessTicks * Bars.Symbol.TickSize;
 				var histoGroup = _histo.Where(k => k.Value.MaxPrice <= groupMaxPrice).Select(k => k.Key).ToList();
-				var key = (int)Math.Round(groupMinPrice / _tickSize);
+				var key = (int)Math.Round(groupMinPrice / Bars.Symbol.TickSize);
 
 				while (key <= _histo.Keys.Max())
 				{
@@ -367,15 +375,15 @@ public sealed class ManualVolumeProfile : Drawing
 					renderHisto[key].VolTotal = histoGroupVol;
 
 					groupMinPrice = groupMaxPrice;
-					groupMaxPrice = groupMinPrice + HistoThicknessTicks * _tickSize;
+					groupMaxPrice = groupMinPrice + HistoThicknessTicks * Bars.Symbol.TickSize;
 					histoGroup = _histo.Where(k => k.Value.MinPrice >= groupMinPrice && k.Value.MaxPrice <= groupMaxPrice).Select(k => k.Key).ToList();
-					key = (int)Math.Round(groupMinPrice / _tickSize);
+					key = (int)Math.Round(groupMinPrice / Bars.Symbol.TickSize);
 				}
 			}
 
 			var isLeftHisto = HistoLocation == HistoEdge.Left;
-			var maxHistoSizePx = isLeftHisto ? (Chart.Width - Math.Max(0, profileStartingX)) * (HistoWidthPercent / 100.0) : Math.Min(Chart.Width - profileStartingX, Chart.Width * HistoWidthPercent / 100.0);
-			maxHistoSizePx = Math.Min(maxHistoSizePx, Math.Abs(Points[0].X - Points[1].X));
+			var maxHistoSizePx = isLeftHisto ? (Chart.Width - Math.Max(0, profileStartingX)) : Math.Min(Chart.Width - profileStartingX, Chart.Width);
+			maxHistoSizePx = Math.Min(maxHistoSizePx, Math.Abs(Points[0].X - Points[1].X)) * (HistoWidthPercent / 100.0);
 			var pointOfControlKey = GetPOCKey(renderHisto);
 			var pocPrice = renderHisto[pointOfControlKey].MidPrice;
 			renderHisto.Values.ToList().ForEach(k => k.IsInVA = false);

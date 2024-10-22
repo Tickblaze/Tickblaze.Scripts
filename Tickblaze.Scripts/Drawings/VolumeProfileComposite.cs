@@ -3,8 +3,11 @@
 public sealed class CompositeVolumeProfile : Drawing
 {
 	[Parameter("Profile Timeframe")]
-	public VolumeProfileTimeframe Timeframe { get; set; } = VolumeProfileTimeframe.Daily; 
-	
+	public VolumeProfileTimeframe Timeframe { get; set; } = VolumeProfileTimeframe.Daily;
+
+	[Parameter("Start time shift (hours)")]
+	public double StartTimeShiftHours { get; set; } = 0;
+
 	[Parameter("Histo Thickness (ticks)"), NumericRange(1, int.MaxValue)]
 	public int HistoThicknessTicks { get; set; } = 1;
 
@@ -162,8 +165,9 @@ public sealed class CompositeVolumeProfile : Drawing
 	}
 	private SortedDictionary<int, SortedDictionary<int, HistoData>> _histos = [];
 
-	private int _priorIndex = int.MinValue;
+	private int _startingBarIndex = 1;
 	private int _profileId;
+	private double _priorStartTimeShiftHours;
 	private VolumeProfileTimeframe _tf = VolumeProfileTimeframe.Daily;
 
 	public CompositeVolumeProfile()
@@ -174,15 +178,17 @@ public sealed class CompositeVolumeProfile : Drawing
 
 	public override void OnRender(IDrawingContext context)
 	{
-		if(_tf != Timeframe)
+		if(_tf != Timeframe || StartTimeShiftHours != _priorStartTimeShiftHours)
 		{
-			//if user changed the Timeframe parameter, clear out the old _histos data
+			//if user changed the Timeframe parameter, or the StartTimeShiftHours, clear out the old _histos data
 			_histos.Clear();
 			_tf = Timeframe;
+			_priorStartTimeShiftHours = StartTimeShiftHours;
+			_startingBarIndex = 1;
 		}
 
 		var leftIndex = 0;
-		var rightIndex = Bars == null ? leftIndex + 5000 : Bars.Count - 1;
+		var rightIndex = Bars.Count - 1;
 
 		// Gap bars are null
 		var validBarIndexes = Enumerable.Range(leftIndex, rightIndex - leftIndex)
@@ -190,29 +196,37 @@ public sealed class CompositeVolumeProfile : Drawing
 			.ToArray();
 
 		Bar priorBar = null;
+		var barShiftedTime = new DateTime();
 
+		//After the first pass of all bars on the chart, we only then need to modify/update the most recent histo.  Skip updating any prior histo for performance gains
+		var startValidBarElement = Math.Max(1, validBarIndexes.FirstOrDefault(k => k <= _startingBarIndex));
 		//Calculate _histo initially, adding the most recently finished bar to the histo (not the unfinished, developing bar)
-		for (var i = 1; i < validBarIndexes.Length; i++)
+		for (var i = startValidBarElement; i < validBarIndexes.Length - 1; i++)
 		{
 			var barIndex = validBarIndexes[i];
 			var bar = Bars[barIndex];
 			var typicalPrice = (bar.High + bar.Low + bar.Close) / 3.0;
+			barShiftedTime = bar.Time.AddHours(-StartTimeShiftHours);
 
 			if (priorBar == null)
 			{
 				_profileId = barIndex;
 			}
-			else if (Timeframe == VolumeProfileTimeframe.Daily && bar.Time.Day != priorBar.Time.Day)
+			else
 			{
-				_profileId = barIndex;
-			}
-			else if (Timeframe == VolumeProfileTimeframe.Weekly && bar.Time.DayOfWeek < priorBar.Time.DayOfWeek)
-			{
-				_profileId = barIndex;
-			}
-			else if (Timeframe == VolumeProfileTimeframe.Monthly && bar.Time.Month != priorBar.Time.Month)
-			{
-				_profileId = barIndex;
+				var _priorStartTimeShiftHours = priorBar.Time.AddHours(-StartTimeShiftHours);
+				if (Timeframe == VolumeProfileTimeframe.Daily && barShiftedTime.Day != _priorStartTimeShiftHours.Day)
+				{
+					_profileId = barIndex;
+				}
+				else if (Timeframe == VolumeProfileTimeframe.Weekly && bar.Time.DayOfWeek < priorBar.Time.DayOfWeek)
+				{
+					_profileId = barIndex;
+				}
+				else if (Timeframe == VolumeProfileTimeframe.Monthly && bar.Time.Month != priorBar.Time.Month)
+				{
+					_profileId = barIndex;
+				}
 			}
 
 			priorBar = bar;
@@ -222,13 +236,16 @@ public sealed class CompositeVolumeProfile : Drawing
 				_histos[_profileId] = [];
 			}
 
-			var sessionId = _profileId * 10000 + ToInteger(bar.Time, 60.0 / 2);
-			var volPerHisto = bar.Volume / (Math.Max(Bars.Symbol.TickSize, Bars.Symbol.RoundToTick(bar.High - bar.Low)) / Bars.Symbol.TickSize);
-			var tickPtr = bar.Low;
+			var sessionId = _profileId * 10000 + ToInteger(barShiftedTime, 60.0 / 2);
+			var high = Bars.Symbol.RoundToTick(bar.High);
+			var low = Bars.Symbol.RoundToTick(bar.Low);
+			var volPerHisto = bar.Volume / (Math.Max(Bars.Symbol.TickSize, Bars.Symbol.RoundToTick(high - low)) / Bars.Symbol.TickSize);
+			var tickPtr = low;
 
-			while (tickPtr <= bar.High)
+			while (tickPtr <= high)
 			{
 				var key = (int)Math.Round(tickPtr / Bars.Symbol.TickSize);
+
 				if (!_histos[_profileId].TryGetValue(key, out _))
 				{
 					_histos[_profileId][key] = new HistoData(tickPtr + Bars.Symbol.TickSize / 2.0, tickPtr - Bars.Symbol.TickSize / 2.0, sessionId);
@@ -239,27 +256,28 @@ public sealed class CompositeVolumeProfile : Drawing
 			}
 		}
 
-		_priorIndex = rightIndex;
-
 		var firstVisibleBar = Chart.GetBarIndexByXCoordinate(0);
 		var lastVisibleBar = Math.Max(Chart.LastVisibleBarIndex, Chart.GetBarIndexByXCoordinate(Chart.Width));
 		var profileIDLeft = _histos.Keys.Where(n => n <= firstVisibleBar).OrderByDescending(n => n).FirstOrDefault();
+
 		if (profileIDLeft == 0)
 		{
 			profileIDLeft = _histos.Keys.Min();
 		}
 
+		_startingBarIndex = _histos.Keys.Max();
 		var profileIDRight = _histos.Keys.LastOrDefault(n => n <= lastVisibleBar);
+
 		if (profileIDRight == 0)
 		{
-			profileIDRight = _histos.Keys.Max();
+			profileIDRight = _startingBarIndex;
 		}
 
 		foreach (var profile in _histos.Where(k => k.Key >= profileIDLeft && k.Key <= profileIDRight))
 		{
 			var profileStartingX = Chart.GetXCoordinateByBarIndex(profile.Key);
 			var profileMaxIndex = _histos.Keys.FirstOrDefault(k => k > profile.Key);
-			profileMaxIndex = profileMaxIndex != 0 ? profileMaxIndex : (Bars == null ? 1000 : Bars.Count - 1);
+			profileMaxIndex = profileMaxIndex != 0 ? profileMaxIndex : Bars.Count - 1;
 			var profileEndingX = Chart.GetXCoordinateByBarIndex(profileMaxIndex);
 			var isPrintable1 = profileStartingX < Chart.Width;
 			var isPrintable2 = profileEndingX > 0;
@@ -307,6 +325,7 @@ public sealed class CompositeVolumeProfile : Drawing
 						//left-edge X pixel is set to the last print X pixel
 						pointLeft.X = pointRight.X;
 						pointRight.X = Chart.GetXCoordinateByBarIndex(barIndex);
+
 						foreach (var id in Enum.GetValues<VWAPIds>())
 						{
 							pointLeft.Y = priorUpperY[id];
@@ -331,6 +350,7 @@ public sealed class CompositeVolumeProfile : Drawing
 			if (isPrintable1 && isPrintable2 && _histos.Count > 0 && _histos[_profileId].Count > 2)
 			{
 				SortedDictionary<int, HistoData> renderHisto = null;
+
 				if (HistoThicknessTicks == 1)
 				{
 					renderHisto = profile.Value;
@@ -357,12 +377,7 @@ public sealed class CompositeVolumeProfile : Drawing
 				}
 
 				var isLeftHisto = true;
-				var maxHistoSizePx = isLeftHisto ? (Chart.Width - Math.Max(0, profileStartingX)) * (HistoWidthPercent / 100.0) : Math.Min(Chart.Width - profileStartingX, Chart.Width * HistoWidthPercent / 100.0);
-				
-				if (profile.Key == profileIDLeft)
-				{
-					maxHistoSizePx = Math.Min(profileEndingX, maxHistoSizePx);
-				}
+				var maxHistoSizePx = (Math.Min(Chart.Width, profileEndingX) - Math.Max(0,profileStartingX)) * HistoWidthPercent / 100.0;
 
 				var pointOfControlKey = GetPOCKey(renderHisto);
 				var pocPrice = renderHisto[pointOfControlKey].MidPrice;
