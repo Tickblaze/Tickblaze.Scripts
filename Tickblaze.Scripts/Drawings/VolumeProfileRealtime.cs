@@ -72,7 +72,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 	public LineStyle VWAPLineStyle { get => _bandSettingsDict[VWAPIds.VWAP].LineStyle; set => _bandSettingsDict[VWAPIds.VWAP].LineStyle = value; }
 
 	[Parameter("Band 1 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band1Mult { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
+	public double Band1Multiplier { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
 
 	[Parameter("Band 1 Color")]
 	public Color Band1Color { get => _bandSettingsDict[VWAPIds.Band1].Color; set => _bandSettingsDict[VWAPIds.Band1].Color = value; }
@@ -84,7 +84,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 	public LineStyle Band1LineStyle { get => _bandSettingsDict[VWAPIds.Band1].LineStyle; set => _bandSettingsDict[VWAPIds.Band1].LineStyle = value; }
 
 	[Parameter("Band 2 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band2Mult { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
+	public double Band2Multiplier { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
 
 	[Parameter("Band 2 Color")]
 	public Color Band2Color { get => _bandSettingsDict[VWAPIds.Band2].Color; set => _bandSettingsDict[VWAPIds.Band2].Color = value; }
@@ -96,7 +96,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 	public LineStyle Band2LineStyle { get => _bandSettingsDict[VWAPIds.Band2].LineStyle; set => _bandSettingsDict[VWAPIds.Band2].LineStyle = value; }
 
 	[Parameter("Band 3 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band3Mult { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
+	public double Band3Multiplier { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
 
 	[Parameter("Band 3 Color")]
 	public Color Band3Color { get => _bandSettingsDict[VWAPIds.Band3].Color; set => _bandSettingsDict[VWAPIds.Band3].Color = value; }
@@ -199,7 +199,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 		var rightIndex = Bars.Count - 1;
 		var validBarIndexes = CalculateLeftAndRightIndexes(ref leftIndex, ref rightIndex, Points[0].X);
 
-		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Math.Min(Points[0].X, Points[1].X) > Chart.GetXCoordinateByBarIndex(Bars.Count - 1) || Math.Max(Points[0].X, Points[1].X) <= 0)
+		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Points[0].X > Chart.GetXCoordinateByBarIndex(Bars.Count - 1) || Points[0].X <= 0)
 		{
 			return;
 		}
@@ -249,7 +249,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 		var isPrintable2 = profileEndingX > 0;
 
 		var pointLeft = new Point(profileStartingX, Points[0].Y);
-		var pointRight = new Point(profileEndingX, Points[0].Y);
+		var pointRight = new Point(profileEndingX, Chart.GetXCoordinateByBarIndex(Bars.Count - 1));
 
 		if (isPrintable1 && isPrintable2)
 		{
@@ -266,7 +266,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 			}
 		}
 
-		if (EnableVWAP && isPrintable1 && isPrintable2 && (Band1Mult > 0 || Band2Mult > 0 || Band3Mult > 0))
+		if (EnableVWAP && isPrintable1 && isPrintable2 && (Band1Multiplier > 0 || Band2Multiplier > 0 || Band3Multiplier > 0))
 		{
 			var volumeSum = 0.0;
 			var typicalVolumeSum = 0.0;

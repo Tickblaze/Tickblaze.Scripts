@@ -1,6 +1,6 @@
 ﻿namespace Tickblaze.Scripts.Drawings;
 
-public sealed class StaticVolumeProfile : Drawing
+public sealed class ManualVolumeProfile : Drawing
 {
 	public enum HistoEdge { Left, Right }
 	public enum AnchorType { Line, Rectangle, Both, Hidden }
@@ -60,7 +60,7 @@ public sealed class StaticVolumeProfile : Drawing
 	public Font LevelFont { get; set; } = new Font("Arial", 12);
 
 	[Parameter("Enable VWAP")]
-	public bool EnableVWAP { get; set; } = true;
+	public bool EnableVWAP { get; set; } = false;
 
 	[Parameter("VWAP Line Color")]
 	public Color VWAPLineColor { get => _bandSettingsDict[VWAPIds.VWAP].Color; set => _bandSettingsDict[VWAPIds.VWAP].Color = value; }
@@ -72,7 +72,7 @@ public sealed class StaticVolumeProfile : Drawing
 	public LineStyle VWAPLineStyle { get => _bandSettingsDict[VWAPIds.VWAP].LineStyle; set => _bandSettingsDict[VWAPIds.VWAP].LineStyle = value; }
 
 	[Parameter("Band 1 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band1Mult { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
+	public double Band1Multiplier { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
 
 	[Parameter("Band 1 Color")]
 	public Color Band1Color { get => _bandSettingsDict[VWAPIds.Band1].Color; set => _bandSettingsDict[VWAPIds.Band1].Color = value; }
@@ -84,7 +84,7 @@ public sealed class StaticVolumeProfile : Drawing
 	public LineStyle Band1LineStyle { get => _bandSettingsDict[VWAPIds.Band1].LineStyle; set => _bandSettingsDict[VWAPIds.Band1].LineStyle = value; }
 
 	[Parameter("Band 2 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band2Mult { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
+	public double Band2Multiplier { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
 
 	[Parameter("Band 2 Color")]
 	public Color Band2Color { get => _bandSettingsDict[VWAPIds.Band2].Color; set => _bandSettingsDict[VWAPIds.Band2].Color = value; }
@@ -96,7 +96,7 @@ public sealed class StaticVolumeProfile : Drawing
 	public LineStyle Band2LineStyle { get => _bandSettingsDict[VWAPIds.Band2].LineStyle; set => _bandSettingsDict[VWAPIds.Band2].LineStyle = value; }
 
 	[Parameter("Band 3 deviations"), NumericRange(0, double.MaxValue)]
-	public double Band3Mult { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
+	public double Band3Multiplier { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
 
 	[Parameter("Band 3 Color")]
 	public Color Band3Color { get => _bandSettingsDict[VWAPIds.Band3].Color; set => _bandSettingsDict[VWAPIds.Band3].Color = value; }
@@ -195,9 +195,9 @@ public sealed class StaticVolumeProfile : Drawing
 	private int _priorIndex = int.MinValue;
 	private double _tickSize;
 
-	public StaticVolumeProfile()
+	public ManualVolumeProfile()
 	{
-		Name = "Volume Profile - Static";
+		Name = "Volume Profile - Manual";
 	}
 
 	private readonly Dictionary<VWAPIds, double> _priorLowerY = [];
@@ -236,7 +236,7 @@ public sealed class StaticVolumeProfile : Drawing
 			_profileHigh = Math.Max(high, _profileHigh);
 			var low = bar.Low;
 			_profileLow = Math.Min(low, _profileLow);
-			var volPerHisto = bar.Volume / (Math.Max(_tickSize, RoundToTick(high - low)) / _tickSize);
+			var volPerHisto = bar.Volume / (Math.Max(_tickSize, Bars.Symbol.RoundToTick(high - low)) / _tickSize);
 			var tickPtr = low;
 			while (tickPtr <= high)
 			{
@@ -253,8 +253,8 @@ public sealed class StaticVolumeProfile : Drawing
 
 		_priorIndex = rightIndex;
 
-		var profileStartingX = Chart.GetXCoordinateByBarIndex(leftIndex);
-		var profileEndingX = Chart.GetXCoordinateByBarIndex(rightIndex);
+		var profileStartingX = Math.Min(Points[0].X, Points[1].X);
+		var profileEndingX = Math.Max(Points[0].X, Points[1].X);
 		var isPrintable1 = profileStartingX < Chart.Width;
 		var isPrintable2 = profileEndingX > 0;
 
@@ -275,8 +275,12 @@ public sealed class StaticVolumeProfile : Drawing
 				context.DrawRectangle(pointLeft, pointRight, Color.Empty, AnchorLineColor, AnchorLineThickness, AnchorLineStyle);
 			}
 		}
+		Points[0].Y = Points[1].Y = (pointLeft.Y + pointRight.Y) / 2.0;
 
-		if (EnableVWAP && isPrintable1 && isPrintable2 && (Band1Mult > 0 || Band2Mult > 0 || Band3Mult > 0))
+		profileStartingX = Chart.GetXCoordinateByBarIndex(leftIndex);
+		profileEndingX = Chart.GetXCoordinateByBarIndex(rightIndex);
+
+		if (EnableVWAP && isPrintable1 && isPrintable2 && (Band1Multiplier > 0 || Band2Multiplier > 0 || Band3Multiplier > 0))
 		{
 			var volumeSum = 0.0;
 			var typicalVolumeSum = 0.0;
@@ -465,7 +469,7 @@ public sealed class StaticVolumeProfile : Drawing
 		}
 
 		var pointRight = new Point(0, 0);
-		displayPrice = RoundToTick(displayPrice);
+		displayPrice = Bars.Symbol.RoundToTick(displayPrice);
 		pointLeft.Y = pointRight.Y = ChartScale.GetYCoordinateByValue(linePrice);
 		pointRight.X = pointLeft.X + maxHistoSizePx;
 		context.DrawLine(pointLeft, pointRight, color, lineThickness);
@@ -512,18 +516,6 @@ public sealed class StaticVolumeProfile : Drawing
 
 		HistosInVAH = ptrB.Count;
 		HistosInVAL = ptrA.Count;
-	}
-	private double RoundToTick(double p)
-	{
-		if (Bars == null || Bars.Symbol == null)
-		{
-			var tk = (int)Math.Round(p / _tickSize);
-			return tk * _tickSize;
-		}
-		else
-		{
-			return Bars.Symbol.RoundToTick(p);
-		}
 	}
 	private static int ToInteger(DateTime t, double minutesPerSession)
 	{
