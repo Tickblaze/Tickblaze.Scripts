@@ -65,7 +65,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 	[Parameter("VWAP Line Color")]
 	public Color VWAPLineColor { get => _bandSettingsDict[VWAPIds.VWAP].Color; set => _bandSettingsDict[VWAPIds.VWAP].Color = value; }
 
-	[Parameter("VWAP Line Thickness"), NumericRange(1, 5)]
+	[Parameter("VWAP Line Thickness"), NumericRange(0, 5)]
 	public int VWAPLineThickness { get => _bandSettingsDict[VWAPIds.VWAP].Thickness; set => _bandSettingsDict[VWAPIds.VWAP].Thickness = value; }
 
 	[Parameter("VWAP Line Style")]
@@ -545,7 +545,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 	{
 		public double Multiplier { get; set; }
 		public Color Color { get; set; }
-		public int Thickness { get; set; } = 1;
+		public int Thickness { get; set; } = 0;
 		public LineStyle LineStyle { get; set; } = LineStyle.Solid;
 	}
 }
