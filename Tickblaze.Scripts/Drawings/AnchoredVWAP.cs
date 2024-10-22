@@ -87,7 +87,7 @@ public sealed class AnchoredVWAP : Drawing
 		var rightIndex = 0;
 		var validBarIndexes = CalculateLeftAndRightIndexes(ref leftIndex, ref rightIndex, Points[0].X);
 
-		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Points[0].X > Chart.GetXCoordinateByBarIndex(Bars.Count - 1) || Points[0].X <= 0)
+		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Points[0].X > Chart.GetXCoordinateByBarIndex(Bars.Count - 1))
 		{
 			return;
 		}
@@ -110,6 +110,11 @@ public sealed class AnchoredVWAP : Drawing
 			{
 				volumeSum = bar.Volume;
 				vwapPointRight = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(typicalPrice));
+				//update the Y value of the anchor point only if necessary - has performance gains
+				if (Points[0].Y != vwapPointRight.Y)
+				{
+					Points[0].Y = vwapPointRight.Y;
+				}
 
 				//left-edge of all plots start out at the same Y pixel
 				foreach (var id in Enum.GetValues<VWAPIds>())
