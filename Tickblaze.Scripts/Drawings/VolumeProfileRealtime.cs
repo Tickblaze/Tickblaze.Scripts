@@ -199,7 +199,7 @@ public sealed class RealtimeVolumeProfile : Drawing
 		var rightIndex = Bars.Count - 1;
 		var validBarIndexes = CalculateLeftAndRightIndexes(ref leftIndex, ref rightIndex, Points[0].X);
 
-		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Points[0].X > Chart.GetXCoordinateByBarIndex(Bars.Count - 1) || Points[0].X <= 0)
+		if (validBarIndexes == null || validBarIndexes.Length == 0 || leftIndex >= rightIndex - 1 || Points[0].X > Chart.GetXCoordinateByBarIndex(Bars.Count - 1))
 		{
 			return;
 		}
