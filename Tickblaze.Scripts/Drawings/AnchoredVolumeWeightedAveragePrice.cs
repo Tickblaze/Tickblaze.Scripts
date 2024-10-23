@@ -1,6 +1,6 @@
 ﻿
 
-public sealed class AnchoredVWAP : Drawing
+public sealed class AnchoredVolumeWeightedAveragePrice : Drawing
 {
 	[Parameter("VWAP Line Color")]
 	public Color VWAPLineColor { get => _bandSettingsDict[VWAPIds.VWAP].Color; set => _bandSettingsDict[VWAPIds.VWAP].Color = value; }
@@ -73,7 +73,7 @@ public sealed class AnchoredVWAP : Drawing
 		}
 	};
 
-	public AnchoredVWAP()
+	public AnchoredVolumeWeightedAveragePrice()
 	{
 		Name = "Anchored VWAP";
 	}
