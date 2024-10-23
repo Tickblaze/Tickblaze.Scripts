@@ -1,7 +1,4 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-using Tickblaze.Scripts.Api.Interfaces;
-using Tickblaze.Scripts.Api.Models;
-
+﻿
 namespace Tickblaze.Scripts.Drawings;
 
 public abstract class VWAPBase : Drawing
@@ -76,11 +73,6 @@ public abstract class VWAPBase : Drawing
 	};
 
 	public override int PointsCount => 1;
-
-	public override void OnRender(IDrawingContext context)
-	{
-
-	}
 
 	public int[] CalculateLeftAndRightIndexes(ref int leftIndex, ref int rightIndex, double x1)
 	{
