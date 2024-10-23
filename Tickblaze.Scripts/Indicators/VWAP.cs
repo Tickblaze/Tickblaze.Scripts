@@ -9,11 +9,20 @@ public partial class VWAP : Indicator
 	[Parameter("Start Time (local)")]
 	public int StartTimeLocal { get; set; } = 1700;
 
+	[Parameter("Show Band 1")]
+	public bool ShowBand1 { get; set; } = false;
+
 	[Parameter("Band 1 deviations"), NumericRange(0, double.MaxValue)]
 	public double Band1Multiplier { get; set; } = 0.75;
 
+	[Parameter("Show Band 2")]
+	public bool ShowBand2 { get; set; } = false;
+
 	[Parameter("Band 2 deviations"), NumericRange(0, double.MaxValue)]
 	public double Band2Multiplier { get; set; } = 1.75;
+
+	[Parameter("Show Band 3")]
+	public bool ShowBand3 { get; set; } = false;
 
 	[Parameter("Band 3 deviations"), NumericRange(0, double.MaxValue)]
 	public double Band3Multiplier { get; set; } = 2.75;
@@ -79,12 +88,23 @@ public partial class VWAP : Indicator
 		var deviation = Math.Sqrt(Math.Max(_varianceSum / (index + 1), 0));
 
 		Result[index] = curVWAP;
-		Band1Upper[index] = curVWAP + deviation * Band1Multiplier;
-		Band1Lower[index] = curVWAP - deviation * Band1Multiplier;
-		Band2Upper[index] = curVWAP + deviation * Band2Multiplier;
-		Band2Lower[index] = curVWAP - deviation * Band2Multiplier;
-		Band3Upper[index] = curVWAP + deviation * Band3Multiplier;
-		Band3Lower[index] = curVWAP - deviation * Band3Multiplier;
+		if (ShowBand1)
+		{
+			Band1Upper[index] = curVWAP + deviation * Band1Multiplier;
+			Band1Lower[index] = curVWAP - deviation * Band1Multiplier;
+		}
+
+		if (ShowBand2)
+		{
+			Band2Upper[index] = curVWAP + deviation * Band2Multiplier;
+			Band2Lower[index] = curVWAP - deviation * Band2Multiplier;
+		}
+
+		if (ShowBand3)
+		{
+			Band3Upper[index] = curVWAP + deviation * Band3Multiplier;
+			Band3Lower[index] = curVWAP - deviation * Band3Multiplier;
+		}
 	}
 
 	private int ToInteger(DateTime t)
