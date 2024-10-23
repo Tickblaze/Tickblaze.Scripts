@@ -1,10 +1,9 @@
-﻿
-namespace Tickblaze.Scripts.Indicators;
+﻿namespace Tickblaze.Scripts.Indicators;
 
 /// <summary>
 /// VWAP [VWAP]
 /// </summary>
-public partial class VWAP : Indicator
+public partial class VolumeWeightedAveragePrice : Indicator
 {
 	[Parameter("Start Time (local)")]
 	public int StartTimeLocal { get; set; } = 1700;
@@ -53,7 +52,7 @@ public partial class VWAP : Indicator
 	private double _varianceSum;
 	private bool _isNewDay;
 
-	public VWAP()
+	public VolumeWeightedAveragePrice()
 	{
 		Name = "VWAP";
 		ShortName = "VWAP";
