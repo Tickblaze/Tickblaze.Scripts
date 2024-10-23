@@ -358,8 +358,3 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-
-# Fody - auto-generated XML schema
-FodyWeavers.xsd
-/Tickblaze.Scripts/Drawings/AnchoredVWAP2.cs
-/Tickblaze.Scripts/Indicators/BigRoundNumbers.cs

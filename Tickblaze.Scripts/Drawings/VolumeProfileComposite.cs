@@ -1,5 +1,8 @@
-﻿namespace Tickblaze.Scripts.Drawings;
+﻿using System.ComponentModel;
 
+namespace Tickblaze.Scripts.Drawings;
+
+[Browsable(false)]
 public sealed class CompositeVolumeProfile : Drawing
 {
 	[Parameter("Profile Timeframe")]
@@ -181,6 +184,7 @@ public sealed class CompositeVolumeProfile : Drawing
 	public override void OnRender(IDrawingContext context)
 	{
 		if(_tf != Timeframe || StartTimeShiftHours != _priorStartTimeShiftHours)
+		if (_tf != Timeframe || StartTimeShiftHours != _priorStartTimeShiftHours)
 		{
 			//if user changed the Timeframe parameter, or the StartTimeShiftHours, clear out the old _histos data
 			_histos.Clear();
@@ -302,7 +306,7 @@ public sealed class CompositeVolumeProfile : Drawing
 				for (var i = 1; i < validBarIndexes.Length; i++)
 				{
 					var barIndex = validBarIndexes[i];
-					var bar = Bars[barIndex]; 
+					var bar = Bars[barIndex];
 					volumeSum += bar.Volume;
 					var typicalPrice = (bar.High + bar.Low + bar.Close) / 3.0;
 					typicalVolumeSum += bar.Volume * typicalPrice;
@@ -380,6 +384,7 @@ public sealed class CompositeVolumeProfile : Drawing
 
 				var isLeftHisto = true;
 				var maxHistoSizePx = (Math.Min(Chart.Width, profileEndingX) - Math.Max(0,profileStartingX)) * HistoWidthPercent / 100.0;
+				var maxHistoSizePx = (Math.Min(Chart.Width, profileEndingX) - Math.Max(0, profileStartingX)) * HistoWidthPercent / 100.0;
 
 				var pointOfControlKey = GetPOCKey(renderHisto);
 				var pocPrice = renderHisto[pointOfControlKey].MidPrice;
@@ -513,10 +518,10 @@ public sealed class CompositeVolumeProfile : Drawing
 		Band2,
 		Band3
 	}
-	public enum VolumeProfileTimeframe 
+	public enum VolumeProfileTimeframe
 	{
-		Daily, 
-		Weekly, 
+		Daily,
+		Weekly,
 		Monthly
 	}
 	private class BandSettings

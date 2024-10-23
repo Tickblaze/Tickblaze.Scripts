@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Tickblaze.Scripts.Indicators;
 
-//[Browsable(false)]
+[Browsable(false)]
 public class TestIndicator : Indicator
 {
 	[Plot("Bar Index")]
@@ -15,10 +15,27 @@ public class TestIndicator : Indicator
 
 	protected override void Calculate(int index)
 	{
-		Result[index] = index;
+		var bar = Bars[index];
+
+		Result[index] = bar.Close;
 		Result.Colors[index] = _colors[_colorIndex];
 
-		if (_lastIndex > index)
+		if (bar.Close > bar.Open)
+		{
+			Result.Colors[index] = Color.Green;
+		}
+        else if (bar.Close < bar.Open)
+        {
+			Result.Colors[index] = Color.Red;
+        }
+		else
+		{
+			Result.Colors[index] = Color.White;
+		}
+
+		return;
+
+        if (_lastIndex > index)
 		{
 			Debugger.Break();
 		}
