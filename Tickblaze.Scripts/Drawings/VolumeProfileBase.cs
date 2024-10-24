@@ -155,6 +155,7 @@ public abstract class VolumeProfileBase : Drawing
 		public double MinPrice;
 		public double VolTotal;
 		public double VolCurrentBar;
+		public double VolFinishedBars;
 		public int SessionId;
 		public bool IsInVA;
 		public HistoData(double maxPrice, double minPrice, int sessionId)
@@ -175,10 +176,11 @@ public abstract class VolumeProfileBase : Drawing
 			{
 				if (isFirstTickOfBar)
 				{
-					VolTotal += VolCurrentBar;
+					VolFinishedBars += VolCurrentBar;
 					VolCurrentBar = 0;
 				}
 				VolCurrentBar += volume;
+				VolTotal = VolFinishedBars + VolCurrentBar;
 			}
 		}
 	}
@@ -209,9 +211,6 @@ public abstract class VolumeProfileBase : Drawing
 	private bool _isFirstTickOfBar;
 	private int _priorLastBar;
 	private int _priorBarsCount;
-
-	private readonly Dictionary<VWAPIds, double> _priorLower_Y = [];
-	private readonly Dictionary<VWAPIds, double> _priorUpper_Y = [];
 
 	protected void OnRender(IDrawingContext context, IChartPoint startPoint, IChartPoint endPoint)
 	{
@@ -245,6 +244,14 @@ public abstract class VolumeProfileBase : Drawing
 				_varianceData[i] = new VolumeVarianceData();
 			}
 			_vwaps.Clear();
+		}
+		else
+		{
+			//we only need the last few varianceData elements to calculate the next bar
+			while(_varianceData.Count > 2)
+			{
+				_varianceData.Remove(_varianceData.Keys.First());
+			}
 		}
 
 		var lastCalcElement = validBarIndexes.Length - 1;
@@ -293,7 +300,7 @@ public abstract class VolumeProfileBase : Drawing
 		var pointLeft = new Point(profileStartingX, startPoint.Y);
 		var pointRight = new Point(profileEndingX, endPoint.Y);
 
-		if (isPrintable1 && isPrintable2)
+		if (isPrintable1 && isPrintable2 && AnchorBoundsType != AnchorType.Hidden)
 		{
 			if (AnchorBoundsType is AnchorType.Line or AnchorType.Both)
 			{
@@ -489,7 +496,7 @@ public abstract class VolumeProfileBase : Drawing
 			}
 		}
 
-		_firstCalcElement = validBarIndexes.Length - 1;
+		_firstCalcElement = validBarIndexes.Length;
 	}
 
 	private int[] CalculateLeftAndRightIndexes(ref int leftIndex, ref int rightIndex, double x1, double x2)
