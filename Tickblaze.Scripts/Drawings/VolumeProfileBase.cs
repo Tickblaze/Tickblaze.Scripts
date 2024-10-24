@@ -1,4 +1,7 @@
-﻿namespace Tickblaze.Scripts.Drawings;
+﻿using Tickblaze.Scripts.Api.Models;
+using Tickblaze.Scripts.Indicators;
+
+namespace Tickblaze.Scripts.Drawings;
 
 public abstract class VolumeProfileBase : Drawing
 {
@@ -150,45 +153,52 @@ public abstract class VolumeProfileBase : Drawing
 		public double MaxPrice;
 		public double MidPrice;
 		public double MinPrice;
-		public SortedDictionary<int, double> VolBySession = [];
 		public double VolTotal;
+		public double VolCurrentBar;
+		public double VolFinishedBars;
 		public int SessionId;
 		public bool IsInVA;
-		public HistoData(double maxPrice, double minPrice, int initialSession)
+		public HistoData(double maxPrice, double minPrice, int sessionId)
 		{
 			MaxPrice = maxPrice;
 			MinPrice = minPrice;
 			MidPrice = (MaxPrice + MinPrice) / 2.0;
-			SessionId = initialSession;
+			SessionId = sessionId;
 			VolTotal = 0;
 		}
-		public void AddVolume(int session, double volume)
+		public void AddVolume(double volume, bool isFirstTickOfBar, bool resetVolume)
 		{
-			VolTotal += volume;
-			if (!VolBySession.TryGetValue(session, out _))
+			if (resetVolume)
 			{
-				VolBySession[session] = volume;
+				VolTotal = volume;
 			}
 			else
 			{
-				var v0 = VolBySession[session];
-				VolBySession[session] = volume + v0;
+				if (isFirstTickOfBar)
+				{
+					VolFinishedBars += VolCurrentBar;
+					VolCurrentBar = 0;
+				}
+				VolCurrentBar += volume;
+				VolTotal = VolFinishedBars + VolCurrentBar;
 			}
 		}
 	}
 
 	private SortedDictionary<int, HistoData> _histo = [];
-
-	private class VWAPlinedata(double mult, Color lineColor, int lineThickness, LineStyle lineStyle)
+	//in this SortedDictionary, the key is BarIndex, and the Tuple.Item1 is the UpperBand value or VWAP value, and Item2 is the LowerBand value
+	private Dictionary<VWAPIds, SortedDictionary<int, Tuple<double, double>>> _vwaps = [];
+	private double _volumeSum;
+	private double _varianceSum;
+	private double _typicalVolumeSum;
+	private class VolumeVarianceData
 	{
-		public double Mult = mult;
-		public double PriorUpperY = 0;
-		public double PriorLowerY = 0;
-		public Color LineColor = lineColor;
-		public int LineThickness = lineThickness;
-		public LineStyle Style = lineStyle;
+		public double VolumeSum = 0;
+		public double TypicalVolumeSum = 0;
+		public double VarianceSum = 0;
+		public double Deviation = 0;
 	}
-	private Dictionary<VWAPIds, VWAPlinedata> _vwaps = [];
+	private SortedDictionary<int, VolumeVarianceData> _varianceData = [];
 
 	private double _profileHigh;
 	private double _profileLow;
@@ -197,9 +207,10 @@ public abstract class VolumeProfileBase : Drawing
 	private double _priorLeftIndex = -1;
 	private double _priorRightIndex = -1;
 	private int _priorIndex = int.MinValue;
-
-	private readonly Dictionary<VWAPIds, double> _priorLowerY = [];
-	private readonly Dictionary<VWAPIds, double> _priorUpperY = [];
+	private int _firstCalcElement;
+	private bool _isFirstTickOfBar;
+	private int _priorLastBar;
+	private int _priorBarsCount;
 
 	protected void OnRender(IDrawingContext context, IChartPoint startPoint, IChartPoint endPoint)
 	{
@@ -212,6 +223,9 @@ public abstract class VolumeProfileBase : Drawing
 			return;
 		}
 
+		_isFirstTickOfBar = _priorBarsCount < validBarIndexes.Length;
+		_priorBarsCount = validBarIndexes.Length;
+
 		//if user moves the left point or the right point, recalculate the histo
 		if (_priorLeftIndex != leftIndex || _priorRightIndex != rightIndex)
 		{
@@ -220,11 +234,30 @@ public abstract class VolumeProfileBase : Drawing
 			_priorRightIndex = rightIndex;
 			_profileHigh = double.MinValue;
 			_profileLow = double.MaxValue;
+			_firstCalcElement = 0;
 			_histo.Clear();
+
+			_priorLastBar = leftIndex;
+			_varianceData.Clear();
+			foreach(var i in validBarIndexes)
+			{
+				_varianceData[i] = new VolumeVarianceData();
+			}
+			_vwaps.Clear();
+		}
+		else
+		{
+			//we only need the last few varianceData elements to calculate the next bar
+			while(_varianceData.Count > 2)
+			{
+				_varianceData.Remove(_varianceData.Keys.First());
+			}
 		}
 
+		var lastCalcElement = validBarIndexes.Length - 1;
+
 		//Calculate _histo initially, adding the most recently finished bar to the histo (not the unfinished, developing bar)
-		for (var i = 0; i < validBarIndexes.Length; i++)
+		for (var i = _firstCalcElement; i <= lastCalcElement; i++)
 		{
 			var barIndex = validBarIndexes[i];
 			var bar = Bars[barIndex];
@@ -244,7 +277,7 @@ public abstract class VolumeProfileBase : Drawing
 					_histo[key] = new HistoData(tickPtr + Bars.Symbol.TickSize / 2.0, tickPtr - Bars.Symbol.TickSize / 2.0, sessionId);
 				}
 
-				_histo[key].AddVolume(sessionId, volPerHisto);
+				_histo[key].AddVolume(volPerHisto, _isFirstTickOfBar, false);
 				tickPtr += Bars.Symbol.TickSize;
 			}
 		}
@@ -267,7 +300,7 @@ public abstract class VolumeProfileBase : Drawing
 		var pointLeft = new Point(profileStartingX, startPoint.Y);
 		var pointRight = new Point(profileEndingX, endPoint.Y);
 
-		if (isPrintable1 && isPrintable2)
+		if (isPrintable1 && isPrintable2 && AnchorBoundsType != AnchorType.Hidden)
 		{
 			if (AnchorBoundsType is AnchorType.Line or AnchorType.Both)
 			{
@@ -287,65 +320,86 @@ public abstract class VolumeProfileBase : Drawing
 
 		if (EnableVWAP && isPrintable1 && isPrintable2 && (Band1Multiplier > 0 || Band2Multiplier > 0 || Band3Multiplier > 0))
 		{
-			var volumeSum = 0.0;
-			var typicalVolumeSum = 0.0;
-			var varianceSum = 0.0;
-			var vwapPointLeft = new Point(0, 0);
-			var vwapPointRight = new Point(0, 0);
-
 			if (leftIndex >= rightIndex - 1)
 			{
 				return;
 			}
 
-			for (var i = 0; i < validBarIndexes.Length; i++)
+			if (_vwaps.Count == 0)
+			{
+				_vwaps[VWAPIds.VWAP] = [];
+				_vwaps[VWAPIds.Band1] = [];
+				_vwaps[VWAPIds.Band2] = [];
+				_vwaps[VWAPIds.Band3] = [];
+			}
+
+			for (var i = _firstCalcElement; i <= lastCalcElement; i++)
 			{
 				var barIndex = validBarIndexes[i];
 				var bar = Bars[barIndex];
 				var typicalPrice = (bar.High + bar.Low + bar.Close) / 3;
-				typicalVolumeSum += bar.Volume * typicalPrice;
-
-				if (i == 0)
-				{
-					vwapPointRight = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(typicalPrice));
-					volumeSum = bar.Volume;
-					foreach (var id in Enum.GetValues<VWAPIds>())
-					{
-						_priorUpperY[id] = _priorLowerY[id] = vwapPointRight.Y;
-					}
-
-					continue;
-				}
-
-				volumeSum += bar.Volume;
-				var curVWAP = typicalVolumeSum / volumeSum;
+				_typicalVolumeSum = _varianceData[_priorLastBar].TypicalVolumeSum + typicalPrice * bar.Volume;
+				_volumeSum = _varianceData[_priorLastBar].VolumeSum + bar.Volume;
+				var curVWAP = _typicalVolumeSum / _volumeSum;
 				var diff = typicalPrice - curVWAP;
-				varianceSum += diff * diff;
-				var deviation = Math.Sqrt(Math.Max(varianceSum / (barIndex - leftIndex), 0));
-
-				//left-edge X pixel is set to the last print X pixel
-				vwapPointLeft.X = vwapPointRight.X;
-				vwapPointRight.X = Chart.GetXCoordinateByBarIndex(barIndex);
+				_varianceSum = _varianceData[_priorLastBar].VarianceSum + diff * diff;
+				var barsInVWAP = validBarIndexes.Count(k => k >= leftIndex && k <= barIndex);
+				var deviation = barIndex == leftIndex ? 0 : Math.Sqrt(Math.Max(_varianceSum / barsInVWAP, 0));
 
 				foreach (var id in Enum.GetValues<VWAPIds>())
 				{
-					vwapPointLeft.Y = _priorUpperY[id];
-					vwapPointRight.Y = ChartScale.GetYCoordinateByValue(curVWAP + deviation * _bandSettingsDict[id].Multiplier);
-					_priorUpperY[id] = vwapPointRight.Y;
+					_vwaps[id][barIndex] = new Tuple<double, double>(curVWAP + (deviation * _bandSettingsDict[id].Multiplier), curVWAP - (deviation * _bandSettingsDict[id].Multiplier));
+				}
+				
+				if (!_varianceData.ContainsKey(barIndex))
+				{
+					_varianceData[barIndex] = new VolumeVarianceData();
+				}
 
-					//This draws the VWAP line, and the upper line for the bands
-					context.DrawLine(vwapPointLeft, vwapPointRight, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
+				_varianceData[barIndex].VarianceSum = _varianceSum;
+				_varianceData[barIndex].VolumeSum = _volumeSum;
+				_varianceData[barIndex].TypicalVolumeSum = _typicalVolumeSum;
+				_priorLastBar = barIndex;
+			}
 
-					//Draw the lower line plot only if this is band 1, 2 or 3
-					if (id == VWAPIds.VWAP)
+			var vwapPointLeft = new Point(0, 0);
+			var vwapPointRight = new Point(0, 0);
+			//only print the visible VWAP lines - for performance benefit
+			foreach (var id in Enum.GetValues<VWAPIds>())
+			{
+				var priorUpperY = 0.0;
+				var priorLowerY = 0.0;
+				foreach (var barIndex in _vwaps[id].Keys)
+				{
+					if (barIndex == _vwaps[id].Keys.First())
+					{
+						vwapPointRight = new Point(Chart.GetXCoordinateByBarIndex(barIndex), ChartScale.GetYCoordinateByValue(_vwaps[id][barIndex].Item1));
+						priorUpperY = vwapPointRight.Y;
+						priorLowerY = vwapPointRight.Y;
+						continue;
+					}
+					//left-edge X pixel is set to the last print X pixel
+					vwapPointLeft.X = vwapPointRight.X;
+					vwapPointRight.X = Chart.GetXCoordinateByBarIndex(barIndex);
+					if (vwapPointLeft.X > Chart.Width || vwapPointRight.X < 0)
 					{
 						continue;
 					}
 
-					vwapPointLeft.Y = _priorLowerY[id];
-					vwapPointRight.Y = ChartScale.GetYCoordinateByValue(curVWAP - deviation * _bandSettingsDict[id].Multiplier);
-					_priorLowerY[id] = vwapPointRight.Y;
+					vwapPointLeft.Y = priorUpperY;
+					vwapPointRight.Y = ChartScale.GetYCoordinateByValue(_vwaps[id][barIndex].Item1);
+					priorUpperY = vwapPointRight.Y;
+
 					context.DrawLine(vwapPointLeft, vwapPointRight, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
+
+					//Draw the lower line plot only if this is band 1, 2 or 3
+					if (id != VWAPIds.VWAP)
+					{
+						vwapPointLeft.Y = priorLowerY;
+						vwapPointRight.Y = ChartScale.GetYCoordinateByValue(_vwaps[id][barIndex].Item2);
+						priorLowerY = vwapPointRight.Y;
+						context.DrawLine(vwapPointLeft, vwapPointRight, _bandSettingsDict[id].Color, _bandSettingsDict[id].Thickness, _bandSettingsDict[id].LineStyle);
+					}
 				}
 			}
 		}
@@ -441,6 +495,8 @@ public abstract class VolumeProfileBase : Drawing
 				}
 			}
 		}
+
+		_firstCalcElement = validBarIndexes.Length;
 	}
 
 	private int[] CalculateLeftAndRightIndexes(ref int leftIndex, ref int rightIndex, double x1, double x2)
