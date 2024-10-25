@@ -45,15 +45,36 @@ public sealed class RealtimeVolumeProfile : VolumeProfileBase
 	public override void OnRender(IDrawingContext context)
 	{
 		var startPoint = Points[0];
+		var lastBarIndex = -1;
+		var lastBar = (Bar)null;
 
-		var validBarIndexes = Enumerable.Range(0, Bars.Count - 1)
-			.Where(i => Bars[i] != null)
-			.ToArray();
+		for (var barIndex = Bars.Count - 1; barIndex >= 0; barIndex--)
+		{
+			var bar = Bars[barIndex];
+			if (bar is not null)
+			{
+				lastBarIndex = barIndex;
+				lastBar = bar;
+
+				break;
+			}
+		}
+
+		if (lastBar is null)
+		{
+			return;
+		}
+
+		var lastBarX = Chart.GetXCoordinateByBarIndex(lastBarIndex);
+		if (lastBarX <= Points[0].X)
+		{
+			return;
+		}
 
 		var endPoint = new ChartPoint()
 		{
-			Time = Bars[validBarIndexes.Last()].Time,
-			X = Chart.GetXCoordinateByBarIndex(validBarIndexes.Last()),
+			Time = lastBar.Time,
+			X = lastBarX,
 		};
 
 		OnRender(context, startPoint, endPoint);
