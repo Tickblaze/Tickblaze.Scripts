@@ -1,7 +1,7 @@
 ﻿namespace Tickblaze.Scripts.Indicators;
 
 /// <summary>
-/// VWAP [VWAP]
+/// Volume Weighted Average Price [VWAP]
 /// </summary>
 public partial class VolumeWeightedAveragePrice : Indicator
 {
@@ -54,7 +54,7 @@ public partial class VolumeWeightedAveragePrice : Indicator
 
 	public VolumeWeightedAveragePrice()
 	{
-		Name = "VWAP";
+		Name = "Volume Weighted Average Price";
 		ShortName = "VWAP";
 		IsOverlay = true;
 	}
