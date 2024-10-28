@@ -2,10 +2,10 @@
 
 public class TrendLine : Line
 {
-	[Parameter("Extend right")]
+	[Parameter("Extend right", Description = "Extend trendline beyond 2nd point")]
 	public bool ExtendRight { get; set; }
 
-	[Parameter("Extend left")]
+	[Parameter("Extend left", Description = "Extend trendline beyond 1st point")]
 	public bool ExtendLeft { get; set; }
 
 	public TrendLine()

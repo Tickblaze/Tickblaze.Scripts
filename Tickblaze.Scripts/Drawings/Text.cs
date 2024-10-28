@@ -2,22 +2,22 @@
 
 public class Text : Drawing
 {
-	[Parameter("Text")]
+	[Parameter("Text", Description = "Characters to print to this text object")]
 	public string Value { get; set; } = "Text";
 
-	[Parameter("Vertical alignment")]
+	[Parameter("Vertical alignment", Description = "Vertical alignment of text within the text box")]
 	public VerticalAlignment VerticalAlignment { get; set; } = VerticalAlignment.Bottom;
 
-	[Parameter("Horizontal alignment")]
+	[Parameter("Horizontal alignment", Description = "Horizontal alignment of text within text box")]
 	public HorizontalAlignment HorizontalAlignment { get; set; } = HorizontalAlignment.Right;
 
-	[Parameter("Font")]
+	[Parameter("Font", Description = "Font name and size")]
 	public Font Font { get; set; } = new("Segoe UI", 13);
 
-	[Parameter("Foreground")]
+	[Parameter("Foreground", Description = "Color and opacity of text")]
 	public Color Foreground { get; set; } = Color.TealGreen;
 
-	[Parameter("Background")]
+	[Parameter("Background", Description = "Color and opacity of background behind text")]
 	public Color Background { get; set; } = Color.Transparent;
 
 	public override int PointsCount => 1;

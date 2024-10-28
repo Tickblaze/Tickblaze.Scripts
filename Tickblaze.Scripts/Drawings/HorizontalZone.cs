@@ -2,22 +2,22 @@
 
 public partial class HorizontalZone : Drawing
 {
-	[Parameter("Risk $")]
+	[Parameter("Risk $", Description = "For position sizing, how much is your max risk expressed in currency units")]
 	public double RiskValue { get; set; } = 500;
 
-	[Parameter("Fill")]
+	[Parameter("Fill", Description = "Color and opacity of the zone fill region")]
 	public Color FillColor { get; set; } = "#33ebc800";
 
-	[Parameter("Outline color")]
+	[Parameter("Outline color", Description = "Color and opacity of the zone boundary lines")]
 	public Color OutlineColor { get; set; } = "#ebc800";
 
-	[Parameter("Outline thickness"), NumericRange(1)]
+	[Parameter("Outline thickness", Description = "Thickness of the zone boundary lines"), NumericRange(1)]
 	public int OutlineThickness { get; set; } = 1;
 
-	[Parameter("Outline style")]
+	[Parameter("Outline style", Description = "Line style of the zone boundary lines")]
 	public LineStyle OutlineLineStyle { get; set; } = LineStyle.Solid;
 
-	[Parameter("Text Font")]
+	[Parameter("Text Font", Description = "Font name and size for the text labels which show calculate position size and price of the bounary line")]
 	public Font TextFont { get; set; } = new("Arial", 10);
 
 	public override int PointsCount => 2;

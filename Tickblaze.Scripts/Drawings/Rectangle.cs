@@ -2,22 +2,22 @@
 
 public sealed class Rectangle : Drawing
 {
-	[Parameter("Background")]
+	[Parameter("Background", Description = "Color and opacity of the rectangle fill")]
 	public Color BackgroundColor { get; set; } = "#339c27b0";
 
-	[Parameter("Border color")]
+	[Parameter("Border color", Description = "Color and opacity of the border lines")]
 	public Color BorderColor { get; set; } = "#9c27b0";
 
-	[Parameter("Border thickness"), NumericRange(1)]
+	[Parameter("Border thickness", Description = "Thickness of the border lines"), NumericRange(1)]
 	public int BorderThickness { get; set; } = 1;
 
-	[Parameter("Border line style")]
+	[Parameter("Border line style", Description = "Line style for the border lines")]
 	public LineStyle BorderLineStyle { get; set; } = LineStyle.Solid;
 
-	[Parameter("Extend right")]
+	[Parameter("Extend right", Description = "Extend the border lines to the right of the chart")]
 	public bool ExtendRight { get; set; }
 
-	[Parameter("Extend left")]
+	[Parameter("Extend left", Description = "Extend the border lines to the left of the chart")]
 	public bool ExtendLeft { get; set; }
 
 	public override int PointsCount => !IsCreated ? 2 : 4;

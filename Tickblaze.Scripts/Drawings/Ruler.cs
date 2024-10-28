@@ -2,22 +2,22 @@
 
 public partial class Ruler : Drawing
 {
-	[Parameter("Line Color")]
+	[Parameter("Line Color", Description = "Color and opacity of the drawn lines")]
 	public Color LineColor { get; set; } = Color.Gray;
 
-	[Parameter("Line Thickness"), NumericRange(1, 10)]
+	[Parameter("Line Thickness", Description = "Thickness of the drawn lines"), NumericRange(1, 10)]
 	public int LineThickness { get; set; } = 1;
 
-	[Parameter("Lines style")]
+	[Parameter("Lines style", Description = "Line style of the drawn lines")]
 	public LineStyle LineStyle { get; set; } = LineStyle.Dot;
 
-	[Parameter("Text Font")]
+	[Parameter("Text Font", Description = "Font name and size for the text")]
 	public Font TextFont { get; set; } = new("Arial", 10);
 
-	[Parameter("Text Foreground")]
+	[Parameter("Text Foreground", Description = "Color and opacity of the text")]
 	public Color TextForeground { get; set; } = Color.Silver;
 
-	[Parameter("Text Background")]
+	[Parameter("Text Background", Description = "Color and opacity of the background fill")]
 	public Color TextBackground { get; set; } = "#33696969";
 
 	public override int PointsCount => 3;

@@ -2,79 +2,79 @@
 
 public sealed class RiskReward : Drawing
 {
-	[Parameter("Stop Risk $")]
+	[Parameter("Stop Risk $", Description = "Max amount of risk, in currency units, for position size calculation")]
 	public double StopRiskValue { get; set; } = 2000;
 
-	[Parameter("Entry Color")]
+	[Parameter("Entry Color", Description = "Color and opacity of the entry line")]
 	public Color EntryColor { get; set; } = Color.Gray;
 
-	[Parameter("Stop Color")]
+	[Parameter("Stop Color", Description = "Color and opacity of the stoploss line")]
 	public Color StopColor { get; set; } = Color.Red;
 
-	[Parameter("T1 Enabled")]
+	[Parameter("T1 Enabled", Description = "Enable Target #1 line")]
 	public bool TargetEnabled1 { get; set; } = true;
 
-	[Parameter("T1 Ratio")]
+	[Parameter("T1 Ratio", Description = "Ratio of Target 1 distance to the Stoploss distance, E.g. '1.5' means the Target distance to entry is 150% of the stoploss distance to entry")]
 	public double TargetRewardRatio1 { get; set; } = 1.5;
 
-	[Parameter("T1 Exit %")]
+	[Parameter("T1 Exit %", Description = "How many contracts to exit at T2, as a percentage of the whole position size")]
 	public double TargetPercent1 { get; set; } = 50;
 
-	[Parameter("T1 Color")]
+	[Parameter("T1 Color", Description = "Color and opacity of the Target 1 line")]
 	public Color TargetColor1 { get; set; } = "#00ff00";
 
-	[Parameter("T2 Enabled")]
+	[Parameter("T2 Enabled", Description = "Enable Target #2 line")]
 	public bool TargetEnabled2 { get; set; } = true;
 
-	[Parameter("T2 Ratio")]
+	[Parameter("T2 Ratio", Description = "Ratio of Target 2 distance to the Stoploss distance, E.g. '1.5' means the Target distance to entry is 150% of the stoploss distance to entry")]
 	public double TargetRewardRatio2 { get; set; } = 2.5;
 
-	[Parameter("T2 Exit %")]
+	[Parameter("T2 Exit %", Description = "How many contracts to exit at T2, as a percentage of the whole position size")]
 	public double TargetPercent2 { get; set; } = 30;
 
-	[Parameter("T2 Color")]
+	[Parameter("T2 Color", Description = "Color and opacity of the Target 2 line")]
 	public Color TargetColor2 { get; set; } = "#00ff7f";
 
-	[Parameter("T3 Enabled")]
+	[Parameter("T3 Enabled", Description = "Enable Target #3 line")]
 	public bool TargetEnabled3 { get; set; } = true;
 
-	[Parameter("T3 Ratio")]
+	[Parameter("T3 Ratio", Description = "Ratio of Target 3 distance to the Stoploss distance, E.g. '1.5' means the Target distance to entry is 150% of the stoploss distance to entry")]
 	public double TargetRewardRatio3 { get; set; } = 3.5;
 
-	[Parameter("T3 Exit %")]
+	[Parameter("T3 Exit %", Description = "How many contracts to exit at T3, as a percentage of the whole position size")]
 	public double TargetPercent3 { get; set; } = 20;
 
-	[Parameter("T3 Color")]
+	[Parameter("T3 Color", Description = "Color and opacity of the Target 3 line")]
 	public Color TargetColor3 { get; set; } = "#00ced1";
 
-	[Parameter("Text Font")]
+	[Parameter("Text Font", Description = "Font name and size for the text")]
 	public Font TextFont { get; set; } = new("Arial", 12);
 
-	[Parameter("Text Position")]
+	[Parameter("Text Position", Description = "Location of text being printed")]
 	public TextPositionType TextPosition { get; set; } = TextPositionType.Left;
 
-	[Parameter("Lines thickness"), NumericRange(1, 5)]
+	[Parameter("Lines thickness", Description = "Thickness of the lines"), NumericRange(1, 5)]
 	public int LineThickness { get; set; } = 1;
 
-	[Parameter("Lines style")]
+	[Parameter("Lines style", Description = "Line style for the lines")]
 	public LineStyle LineStyle { get; set; } = LineStyle.Solid;
 
-	[Parameter("Extend lines left")]
+	[Parameter("Extend lines left", Description = "Extend the lines to the left-side of the chart")]
 	public bool ExtendLinesLeft { get; set; }
 
-	[Parameter("Extend lines right")]
+	[Parameter("Extend lines right", Description = "Extend the lines to the right-side of the chart")]
 	public bool ExtendLinesRight { get; set; }
 
-	[Parameter("Show Price")]
+	[Parameter("Show Price", Description = "Show price on each of the levels")]
 	public bool ShowPrice { get; set; } = true;
 
-	[Parameter("Show Ticks")]
+	[Parameter("Show Ticks", Description = "Display the distance, in ticks, for each level")]
 	public bool ShowTicks { get; set; } = true;
 
-	[Parameter("Show Quantity")]
+	[Parameter("Show Quantity", Description = "Display the quantity entered/exited at each level")]
 	public bool ShowQuantity { get; set; } = true;
 
-	[Parameter("Show PnL")]
+	[Parameter("Show PnL", Description = "Display the PnL, in currency units, at each level")]
 	public bool ShowProfit { get; set; } = true;
 
 	public IChartPoint PointA => Points[0];

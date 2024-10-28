@@ -5,10 +5,10 @@ namespace Tickblaze.Scripts.Drawings;
 [Browsable(false)]
 public sealed class CompositeVolumeProfile : Drawing
 {
-	[Parameter("Profile Timeframe")]
+	[Parameter("Profile Timeframe", Description = "Time range for the profiles.  Daily, Weekly or Monthly")]
 	public VolumeProfileTimeframe Timeframe { get; set; } = VolumeProfileTimeframe.Daily;
 
-	[Parameter("Start time shift (hours)")]
+	[Parameter("Start time shift (hours)", Description = "Adjust the start time of the daily profiles. Positive shifts them to the right, Negative shifts them to the left.  E.g. 1.5 shifts the profiles right 90-minutes")]
 	public double StartTimeShiftHours { get; set; } = 0;
 
 	[Parameter("Histo Thickness (ticks)"), NumericRange(1, int.MaxValue)]

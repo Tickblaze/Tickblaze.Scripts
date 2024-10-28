@@ -2,19 +2,19 @@
 
 public sealed class HorizontalLineZone : HorizontalZone
 {
-	[Parameter("Line Color")]
+	[Parameter("Line Color", Description = "Color of the horizontal center line of the zone")]
 	public Color LineColor { get; set; } = Color.White;
 
-	[Parameter("Line Thickness"), NumericRange(1, 10)]
+	[Parameter("Line Thickness", Description = "Thickness of the horizontal center line of the zone"), NumericRange(1, 10)]
 	public int LineThickness { get; set; } = 1;
 
-	[Parameter("Line Style")]
+	[Parameter("Line Style", Description = "Line style of the horizontal center line of the zone")]
 	public LineStyle LineStyle { get; set; } = LineStyle.Solid;
 
-	[Parameter("Size Type")]
+	[Parameter("Size Type", Description = "Type of 'Size Value' to determine the vertical size of the zone")]
 	public SizeType Size { get; set; } = SizeType.Ticks;
 
-	[Parameter("Size Value")]
+	[Parameter("Size Value", Description = "Vertical size dimension of the zone above the center line, and below the center line.  E.g. a 10-tick is zone of overall height 20-ticks")]
 	public double SizeValue { get; set; } = 5;
 
 	public override int PointsCount => 1;

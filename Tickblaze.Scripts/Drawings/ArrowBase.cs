@@ -2,10 +2,10 @@
 
 public abstract class ArrowBase : Drawing
 {
-	[Parameter("Color")]
+	[Parameter("Color", Description = "Arrow fill color")]
 	public Color Color { get; set; } = Color.Red;
 
-	[Parameter("Size"), NumericRange(6, 100)]
+	[Parameter("Size", Description = "Arrow size, from 6 to 100"), NumericRange(6, 100)]
 	public int Size { get; set; } = 18;
 
 	protected ArrowType Type { get; set; }

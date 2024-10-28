@@ -5,13 +5,13 @@ public sealed class Pitchfork : Line
 	//[Parameter("Style")]
 	//public StyleType Style { get; set; }
 
-	[Parameter("Anchor line color")]
+	[Parameter("Anchor line color", Description = "Color and opacity of the anchor line")]
 	public Color AnchorLineColor { get; set; } = Color.Gray;
 
-	[Parameter("Anchor line thickness")]
+	[Parameter("Anchor line thickness", Description = "Thickness of the anchor line")]
 	public int AnchorLineThickness { get; set; } = 1;
 
-	[Parameter("Anchor line style")]
+	[Parameter("Anchor line style", Description = "Style of the anchor line")]
 	public LineStyle AnchorLineStyle { get; set; } = LineStyle.Dash;
 
 	public override int PointsCount => 3;

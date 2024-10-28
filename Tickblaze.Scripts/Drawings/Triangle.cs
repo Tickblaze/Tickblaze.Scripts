@@ -2,16 +2,16 @@
 
 public sealed class Triangle : Drawing
 {
-	[Parameter("Background")]
+	[Parameter("Background", Description = "Color and opacity of triangle fill region")]
 	public Color BackgroundColor { get; set; } = "#339c27b0";
 
-	[Parameter("Border color")]
+	[Parameter("Border color", Description = "Color and opacity of triangle border")]
 	public Color BorderColor { get; set; } = "#9c27b0";
 
-	[Parameter("Border thickness"), NumericRange(1)]
+	[Parameter("Border thickness", Description = "Thickness of triangle border line"), NumericRange(1)]
 	public int BorderThickness { get; set; } = 1;
 
-	[Parameter("Border line style")]
+	[Parameter("Border line style", Description = "Line style for triangle border line")]
 	public LineStyle BorderLineStyle { get; set; } = LineStyle.Solid;
 
 	public override int PointsCount => 3;

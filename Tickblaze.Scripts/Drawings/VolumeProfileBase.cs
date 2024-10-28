@@ -1,119 +1,121 @@
-﻿namespace Tickblaze.Scripts.Drawings;
+﻿using System.ComponentModel;
+
+namespace Tickblaze.Scripts.Drawings;
 
 public abstract class VolumeProfileBase : Drawing
 {
-	[Parameter("Histo Thickness (ticks)"), NumericRange(1, int.MaxValue)]
+	[Parameter("Histo Thickness (ticks)", Description = "Vertical thickness of each histo, in price ticks"), NumericRange(1, int.MaxValue)]
 	public int HistoThicknessTicks { get; set; } = 1;
 
-	[Parameter("Value Area %"), NumericRange(0, 100)]
+	[Parameter("Value Area %", Description = "Size of the 'Value Area', as a % of vtotal olume for the entire profile time range, centered around the POC"), NumericRange(0, 100)]
 	public double ValueAreaPercent { get; set; } = 70;
 
-	[Parameter("Value Area Histo Color")]
+	[Parameter("Value Area Histo Color", Description = "Color of the Value Area")]
 	public Color VAHistoColor { get; set; } = new Color(127, Color.Gray.R, Color.Gray.G, Color.Gray.B);
 
-	[Parameter("Show Out-of-VA")]
+	[Parameter("Show Out-of-VA", Description = "The 'Out-of-VA' regions are those parts of the profile that are above the Value Area, and below the Value Area")]
 	public bool ShowOutVA { get; set; } = true;
 
-	[Parameter("Outside VA Histo Color")]
+	[Parameter("Outside VA Histo Color", Description = "Color of the profile areas above/below the Value Area")]
 	public Color OutsideVAHistoColor { get; set; } = new Color(127, Color.DeepPurple.R, Color.DeepPurple.G, Color.DeepPurple.B);
 
-	[Parameter("Histo Location")]
+	[Parameter("Histo Location", Description = "Left side justified, or Right side justified")]
 	public HistoEdge HistoLocation { get; set; } = HistoEdge.Left;
 
-	[Parameter("Histo Width (%)"), NumericRange(0, 100)]
+	[Parameter("Histo Width (%)", Description = "Horizontal size of each profile, as a % of the max size of the profile timerange"), NumericRange(0, 100)]
 	public int HistoWidthPercent { get; set; } = 90;
 
-	[Parameter("Show POC Level")]
+	[Parameter("Show POC Level", Description = "Turn-on the line/label of the POC price")]
 	public bool ShowPOCLevel { get; set; } = false;
 
-	[Parameter("POC Line Color")]
+	[Parameter("POC Line Color", Description = "Color of the line that demarks the POC price")]
 	public Color POCLineColor { get; set; } = new Color(250, Color.Yellow.R, Color.Yellow.G, Color.Yellow.B);
 
-	[Parameter("POC Line Thickness"), NumericRange(1, 5)]
+	[Parameter("POC Line Thickness", Description = "Thickness of the line that demarks the POC price"), NumericRange(1, 5)]
 	public int POCLineThickness { get; set; } = 1;
 
-	[Parameter("Show VAH Level")]
+	[Parameter("Show VAH Level", Description = "Turn-on the line/label of the Value Area High price")]
 	public bool ShowVAHLevel { get; set; } = false;
 
-	[Parameter("VAH Line Color")]
+	[Parameter("VAH Line Color", Description = "Color of the line that demarks the VAH price")]
 	public Color VAHLineColor { get; set; } = new Color(250, Color.Blue.R, Color.Blue.G, Color.Blue.B);
 
-	[Parameter("VAH Line Thickness"), NumericRange(1, 5)]
+	[Parameter("VAH Line Thickness", Description = "Thickness of the line that demarks the VAH price"), NumericRange(1, 5)]
 	public int VAHLineThickness { get; set; } = 1;
 
-	[Parameter("Show VAL Level")]
+	[Parameter("Show VAL Level", Description = "Turn-on the line/label of the Value Area Low price")]
 	public bool ShowVALLevel { get; set; } = false;
 
-	[Parameter("VAL Line Color")]
+	[Parameter("VAL Line Color", Description = "Color of the line that demarks the VAL price")]
 	public Color VALLineColor { get; set; } = new Color(250, Color.Purple.R, Color.Purple.G, Color.Purple.B);
 
-	[Parameter("VAL Line Thickness"), NumericRange(1, 5)]
+	[Parameter("VAL Line Thickness", Description = "Thickness of the line that demarks the VAL price"), NumericRange(1, 5)]
 	public int VALLineThickness { get; set; } = 1;
 
-	[Parameter("Show Level Prices")]
+	[Parameter("Show Level Prices", Description = "Add the price of each profile level, as text, to POC, VAH, VAL")]
 	public bool ShowLevelPrices { get; set; } = false;
 
-	[Parameter("Level Font")]
+	[Parameter("Level Font", Description = "Font for the price text on each profile level")]
 	public Font LevelFont { get; set; } = new Font("Arial", 12);
 
-	[Parameter("Enable VWAP")]
+	[Parameter("Enable VWAP", Description = "Turn-on the VWAP line and VWAP deviation bands")]
 	public bool EnableVWAP { get; set; } = true;
 
-	[Parameter("VWAP Line Color")]
+	[Parameter("VWAP Line Color", Description = "Color of the VWAP line")]
 	public Color VWAPLineColor { get => _bandSettingsDict[VWAPIds.VWAP].Color; set => _bandSettingsDict[VWAPIds.VWAP].Color = value; }
 
-	[Parameter("VWAP Line Thickness"), NumericRange(0, 5)]
+	[Parameter("VWAP Line Thickness", Description = "Thickness of the VWAP line"), NumericRange(0, 5)]
 	public int VWAPLineThickness { get => _bandSettingsDict[VWAPIds.VWAP].Thickness; set => _bandSettingsDict[VWAPIds.VWAP].Thickness = value; }
 
-	[Parameter("VWAP Line Style")]
+	[Parameter("VWAP Line Style", Description = "VWAP line style")]
 	public LineStyle VWAPLineStyle { get => _bandSettingsDict[VWAPIds.VWAP].LineStyle; set => _bandSettingsDict[VWAPIds.VWAP].LineStyle = value; }
 
-	[Parameter("Band 1 deviations"), NumericRange(0, double.MaxValue)]
+	[Parameter("Band 1 deviations", Description = "Distance, as a standard deviation multiple) for the 1st band"), NumericRange(0, double.MaxValue)]
 	public double Band1Multiplier { get => _bandSettingsDict[VWAPIds.Band1].Multiplier; set => _bandSettingsDict[VWAPIds.Band1].Multiplier = value; }
 
-	[Parameter("Band 1 Color")]
+	[Parameter("Band 1 Color", Description = "Color of the 1st band lines")]
 	public Color Band1Color { get => _bandSettingsDict[VWAPIds.Band1].Color; set => _bandSettingsDict[VWAPIds.Band1].Color = value; }
 
-	[Parameter("Band 1 Line Thickness"), NumericRange(0, 5)]
+	[Parameter("Band 1 Line Thickness", Description = "Thickness of the 1st band lines"), NumericRange(0, 5)]
 	public int Band1LineThickness { get => _bandSettingsDict[VWAPIds.Band1].Thickness; set => _bandSettingsDict[VWAPIds.Band1].Thickness = value; }
 
-	[Parameter("Band 1 Line Style")]
+	[Parameter("Band 1 Line Style", Description = "Line style of the 1st band lines")]
 	public LineStyle Band1LineStyle { get => _bandSettingsDict[VWAPIds.Band1].LineStyle; set => _bandSettingsDict[VWAPIds.Band1].LineStyle = value; }
 
-	[Parameter("Band 2 deviations"), NumericRange(0, double.MaxValue)]
+	[Parameter("Band 2 deviations", Description = "Distance, as a standard deviation multiple) for the 2nd band"), NumericRange(0, double.MaxValue)]
 	public double Band2Multiplier { get => _bandSettingsDict[VWAPIds.Band2].Multiplier; set => _bandSettingsDict[VWAPIds.Band2].Multiplier = value; }
 
-	[Parameter("Band 2 Color")]
+	[Parameter("Band 2 Color", Description = "Color of the 2nd band lines")]
 	public Color Band2Color { get => _bandSettingsDict[VWAPIds.Band2].Color; set => _bandSettingsDict[VWAPIds.Band2].Color = value; }
 
-	[Parameter("Band 2 Line Thickness"), NumericRange(0, 5)]
+	[Parameter("Band 2 Line Thickness", Description = "Thickness of the 2nd band lines"), NumericRange(0, 5)]
 	public int Band2LineThickness { get => _bandSettingsDict[VWAPIds.Band2].Thickness; set => _bandSettingsDict[VWAPIds.Band2].Thickness = value; }
 
-	[Parameter("Band 2 Line Style")]
+	[Parameter("Band 2 Line Style", Description = "Line style of the 2nd band lines")]
 	public LineStyle Band2LineStyle { get => _bandSettingsDict[VWAPIds.Band2].LineStyle; set => _bandSettingsDict[VWAPIds.Band2].LineStyle = value; }
 
-	[Parameter("Band 3 deviations"), NumericRange(0, double.MaxValue)]
+	[Parameter("Band 3 deviations", Description = "Distance, as a standard devaition multiple) for the 3rd band"), NumericRange(0, double.MaxValue)]
 	public double Band3Multiplier { get => _bandSettingsDict[VWAPIds.Band3].Multiplier; set => _bandSettingsDict[VWAPIds.Band3].Multiplier = value; }
 
-	[Parameter("Band 3 Color")]
+	[Parameter("Band 3 Color", Description = "Color of the 3rd band lines")]
 	public Color Band3Color { get => _bandSettingsDict[VWAPIds.Band3].Color; set => _bandSettingsDict[VWAPIds.Band3].Color = value; }
 
-	[Parameter("Band 3 Line Thickness"), NumericRange(0, 5)]
+	[Parameter("Band 3 Line Thickness", Description = "Thickness of the 3rd band lines"), NumericRange(0, 5)]
 	public int Band3LineThickness { get => _bandSettingsDict[VWAPIds.Band3].Thickness; set => _bandSettingsDict[VWAPIds.Band3].Thickness = value; }
 
-	[Parameter("Band 3 Line Style")]
+	[Parameter("Band 3 Line Style", Description = "Line style of the 3rd band lines")]
 	public LineStyle Band3LineStyle { get => _bandSettingsDict[VWAPIds.Band3].LineStyle; set => _bandSettingsDict[VWAPIds.Band3].LineStyle = value; }
 
-	[Parameter("Anchor Line Color")]
+	[Parameter("Anchor Line Color", Description = "Color of the drawing tools' anchor line")]
 	public Color AnchorLineColor { get; set; } = Color.DimGray;
 
-	[Parameter("Anchor Line Thickness"), NumericRange(1, 5)]
+	[Parameter("Anchor Line Thickness", Description = "Thickness of the drawing tools' anchor line"), NumericRange(1, 5)]
 	public int AnchorLineThickness { get; set; } = 1;
 
-	[Parameter("Anchor Line Style")]
+	[Parameter("Anchor Line Style", Description = "Line style of the drawing tools' anchor line")]
 	public LineStyle AnchorLineStyle { get; set; } = LineStyle.Solid;
 
-	[Parameter("Anchor Type")]
+	[Parameter("Anchor Type", Description = "Type of anchor marker")]
 	public AnchorType AnchorBoundsType { get; set; } = AnchorType.Rectangle;
 
 	public override int PointsCount => 2;
