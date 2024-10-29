@@ -19,6 +19,7 @@ public partial class VolumeWeightedMovingAverage : Indicator
 		Name = "Volume Weighted Moving Average";
 		ShortName = "VWMA";
 		IsOverlay = true;
+		AutoRescale = false;
 	}
 
 	protected override void Calculate(int index)

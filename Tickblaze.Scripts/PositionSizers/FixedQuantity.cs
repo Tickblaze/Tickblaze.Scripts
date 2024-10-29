@@ -1,13 +1,11 @@
-﻿using System.ComponentModel;
-using Tickblaze.Scripts.Api.Interfaces.Orders;
+﻿using Tickblaze.Scripts.Api.Interfaces.Orders;
 
 namespace Tickblaze.Scripts.PositionSizers;
 
 /// <summary>
 /// This position sizing script assigns a fixed size to each order.
 /// </summary>
-[Browsable(false)]
-public class FixedSize : PositionSizer
+public class FixedQuantity : PositionSizer
 {
 	[Parameter("Quantity per order", Description = "The fixed quantity of shares / contracts / units for each order.")]
 	public double QuantityPerOrder { get; set; } = 100;
@@ -15,30 +13,23 @@ public class FixedSize : PositionSizer
 	[Parameter("Enable exit sizing", Description = "Use to indicate whether to enable the position sizing script to determine the size of exit orders.")]
 	public bool EnableExitSizing { get; set; } = true;
 
-	public FixedSize()
+	public FixedQuantity()
 	{
-		Name = "Fixed Size";
-		ShortName = "FS";
+		Name = "Fixed Quantity";
+		ShortName = "FQ";
+		Description = "This position sizing script assigns a fixed size to each order.";
 	}
 
 	protected override double GetPositionSize(IOrder order)
 	{
-		if (EnableExitSizing)
+		if (EnableExitSizing && Position is not null)
 		{
-			foreach (var position in Positions)
+			if (Position.Quantity < order.Quantity)
 			{
-				if (position.Status is PositionStatus.Close || position.Direction == order.Direction)
-				{
-					continue;
-				}
-
-				if (position.Quantity < order.Quantity)
-				{
-					return order.Quantity;
-				}
-
-				return position.Quantity;
+				return order.Quantity;
 			}
+
+			return Position.Quantity;
 		}
 
 		return QuantityPerOrder;
