@@ -38,7 +38,7 @@ public class FixedFractionalPercent : PositionSizer
 		}
 
 		var exchangeRate = GetExchangeRate(Symbol.CurrencyCode, Account.BaseCurrencyCode);
-		var size = Math.Floor((Fractional / 100.0 * Account.Equity) / (exchangeRate * price));
+		var size = Math.Floor((Fractional / 100.0 * Account.Equity) / (exchangeRate * price * Symbol.PointValue));
 
 		return size;
 	}

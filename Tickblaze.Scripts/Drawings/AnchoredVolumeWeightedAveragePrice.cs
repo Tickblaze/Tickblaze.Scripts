@@ -109,6 +109,22 @@ public sealed class AnchoredVolumeWeightedAveragePrice : Drawing
 
 	public override int PointsCount => 1;
 
+	private enum VWAPIds
+	{
+		VWAP,
+		Band1,
+		Band2,
+		Band3
+	}
+
+	private class BandSettings
+	{
+		public double Multiplier { get; set; }
+		public Color Color { get; set; }
+		public int Thickness { get; set; } = 0;
+		public LineStyle LineStyle { get; set; } = LineStyle.Solid;
+	}
+
 	private readonly Dictionary<VWAPIds, BandSettings> _bandSettingsDict = new()
 	{
 		[VWAPIds.VWAP] = new BandSettings
@@ -132,14 +148,13 @@ public sealed class AnchoredVolumeWeightedAveragePrice : Drawing
 			Color = Color.Red
 		}
 	};
+	private readonly Dictionary<VWAPIds, double> _priorLowerY = [];
+	private readonly Dictionary<VWAPIds, double> _priorUpperY = [];
 
 	public AnchoredVolumeWeightedAveragePrice()
 	{
 		Name = "Anchored VWAP";
 	}
-
-	private readonly Dictionary<VWAPIds, double> _priorLowerY = [];
-	private readonly Dictionary<VWAPIds, double> _priorUpperY = [];
 
 	public override void OnRender(IDrawingContext context)
 	{
@@ -237,21 +252,5 @@ public sealed class AnchoredVolumeWeightedAveragePrice : Drawing
 		index = rightIndex;
 		rightIndex = validBarIndexes.LastOrDefault(k => k <= index);
 		return validBarIndexes;
-	}
-
-	private enum VWAPIds
-	{
-		VWAP,
-		Band1,
-		Band2,
-		Band3
-	}
-
-	private class BandSettings
-	{
-		public double Multiplier { get; set; }
-		public Color Color { get; set; }
-		public int Thickness { get; set; } = 0;
-		public LineStyle LineStyle { get; set; } = LineStyle.Solid;
 	}
 }

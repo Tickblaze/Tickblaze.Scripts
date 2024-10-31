@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
 using Tickblaze.Scripts.Api.Interfaces.Orders;
 
-namespace Tickblaze.Scripts.TradeManagementSystems;
+namespace Tickblaze.Scripts.TradeManagementStrategies;
 
-public class Test : TradeManagementSystem
+public class Test : TradeManagementStrategy
 {
 	[NumericRange(0, int.MaxValue)]
 	[Parameter("Stop-loss distance (ticks)", Description = "Enter the distance from your entry in ticks, that you would like to set your stop loss. Entering zero (0) means you have no stop loss.")]

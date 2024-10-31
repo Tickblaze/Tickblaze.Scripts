@@ -31,7 +31,7 @@ public class MovingAverageCrossover : Strategy
 
 	public MovingAverageCrossover()
 	{
-		Name = "Moving Average Crossover";
+		Name = "MA Crossover";
 		Description = "The Moving Average Crossover Strategy detects trends by tracking crossovers between fast and slow moving averages. A bullish crossover triggers a buy order, while a bearish crossover triggers a sell order, aiming to capture early trend changes.";
 	}
 
@@ -73,12 +73,13 @@ public class MovingAverageCrossover : Strategy
 			return;
 		}
 
-		if (_isBullishTrend[index] != !_isBullishTrend[index - 1])
+		if (_isBullishTrend[index] == _isBullishTrend[index - 1])
 		{
 			return;
 		}
 
 		var orderDirection = _isBullishTrend[index] ? OrderDirection.Long : OrderDirection.Short;
+		var quantity = 1d;
 
 		// If take profits are enabled, they handle the exits exclusively
 		if (Position != null)
@@ -88,7 +89,7 @@ public class MovingAverageCrossover : Strategy
 				return;
 			}
 
-			ClosePosition();
+			quantity = Position.Quantity * 2;
 		}
 
 		if (orderDirection == OrderDirection.Long ? !EnableLonging : !EnableShorting)
@@ -96,17 +97,21 @@ public class MovingAverageCrossover : Strategy
 			return;
 		}
 
-		var order = ExecuteMarketOrder(orderDirection == OrderDirection.Long ? OrderAction.Buy : OrderAction.Sell, 1);
+		var order = ExecuteMarketOrder(orderDirection == OrderDirection.Long ? OrderAction.Buy : OrderAction.Sell, quantity);
 		if (StopLossPercent > 0)
 		{
 			var stopLossPercentOfPrice = orderDirection == OrderDirection.Long ? 1 - StopLossPercent / 100 : 1 + StopLossPercent / 100;
-			SetStopLoss(order, Math.Max(0.001, Bars[index].Close * stopLossPercentOfPrice));
+			var stopLossPrice = Bars[index].Close * stopLossPercentOfPrice;
+
+			SetStopLoss(order, Math.Max(0.001, stopLossPrice));
 		}
 
 		if (TakeProfitPercent > 0)
 		{
 			var takeProfitPercentOfPrice = orderDirection == OrderDirection.Long ? 1 + TakeProfitPercent / 100 : 1 - TakeProfitPercent / 100;
-			SetTakeProfit(order, Math.Max(0.001, Bars[index].Close * takeProfitPercentOfPrice));
+			var takeProfitPrice = Bars[index].Close * takeProfitPercentOfPrice;
+
+			SetTakeProfit(order, Math.Max(0.001, takeProfitPrice));
 		}
 	}
 }

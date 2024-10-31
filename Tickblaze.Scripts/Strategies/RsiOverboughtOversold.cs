@@ -17,21 +17,18 @@ public class RsiOverboughtOversold : Strategy
 	public int RsiOversoldValue { get; set; } = 30;
 
 	[NumericRange(0, int.MaxValue)]
-	[Parameter("Stop-loss Ticks")]
-	public int StopLossTicks { get; set; } = 10;
+	[Parameter("Stop-loss %")]
+	public double StopLossPercent { get; set; } = 10;
 
 	[NumericRange(0, int.MaxValue)]
-	[Parameter("Take-profit Ticks")]
-	public int TakeProfitTicks { get; set; } = 10;
+	[Parameter("Take-profit %")]
+	public double TakeProfitPercent { get; set; } = 10;
 
 	[Parameter("Short enabled?")]
 	public bool IsShortEnabled { get; set; } = true;
 
 	[Parameter("Long enabled?")]
 	public bool IsLongEnabled { get; set; } = true;
-
-	[Parameter("Reverse on opposite signal?")]
-	public bool IsReverseOnOppositeSignalEnabled { get; set; } = true;
 
 	private RelativeStrengthIndex _rsi;
 
@@ -52,58 +49,67 @@ public class RsiOverboughtOversold : Strategy
 
 	protected override void OnBar(int index)
 	{
-		var rsi = _rsi.Result[index];
-		if (rsi < RsiOversoldValue)
+		if (index == 0)
 		{
-			var comment = "Oversold";
-
-			if (Position?.Direction is OrderDirection.Short)
-			{
-				ClosePosition(comment);
-			}
-
-			if (IsLongEnabled && Position is null && Orders.Count == 0)
-			{
-				var price = Bars.Close[index];
-				var stopLoss = StopLossTicks > 0 ? price - StopLossTicks * Symbol.TickSize : (double?)null;
-				var takeProfit = TakeProfitTicks > 0 ? price + TakeProfitTicks * Symbol.TickSize : (double?)null;
-
-				EnterMarket(OrderDirection.Long, stopLoss, takeProfit);
-			}
+			return;
 		}
-		else if (rsi > RsiOverboughtValue)
+
+		var rsi = new[] { _rsi.Result[index], _rsi.Result[index - 1] };
+		if (rsi[1] >= RsiOversoldValue && RsiOversoldValue > rsi[0])
 		{
 			var comment = "Overbought";
 
-			if (Position?.Direction is OrderDirection.Long)
+			if (IsLongEnabled)
+			{
+				EnterMarket(OrderDirection.Long, comment);
+			}
+			else if (Position?.Direction is OrderDirection.Short)
 			{
 				ClosePosition(comment);
 			}
+		}
+		else if (rsi[1] <= RsiOverboughtValue && RsiOverboughtValue < rsi[0])
+		{
+			var comment = "Overbought";
 
-			if (IsShortEnabled && Position is null && Orders.Count == 0)
+			if (IsShortEnabled)
 			{
-				var price = Bars.Close[index];
-				var stopLoss = StopLossTicks > 0 ? price + StopLossTicks * Symbol.TickSize : (double?)null;
-				var takeProfit = TakeProfitTicks > 0 ? price - TakeProfitTicks * Symbol.TickSize : (double?)null;
-
-				EnterMarket(OrderDirection.Short, stopLoss, takeProfit);
+				EnterMarket(OrderDirection.Short, comment);
+			}
+			else if (Position?.Direction is OrderDirection.Long)
+			{
+				ClosePosition(comment);
 			}
 		}
 	}
 
-	private void EnterMarket(OrderDirection direction, double? stopLoss, double? takeProfit)
+	private void EnterMarket(OrderDirection direction, string comment = "")
 	{
-		var action = direction is OrderDirection.Long ? OrderAction.Buy : OrderAction.SellShort;
-		var marketOrder = ExecuteMarketOrder(action, 1);
-
-		if (stopLoss.HasValue)
+		if (Position?.Direction == direction)
 		{
-			SetStopLoss(marketOrder, stopLoss.Value);
+			return;
 		}
 
-		if (takeProfit.HasValue)
+		var price = Bars.Close[^1];
+		var action = direction is OrderDirection.Long ? OrderAction.Buy : OrderAction.SellShort;
+		var exitMultiplier = direction is OrderDirection.Long ? 1 : -1;
+		var quantity = 1 + (Position?.Quantity ?? 0);
+		var marketOrder = ExecuteMarketOrder(action, quantity, TimeInForce.GoodTillCancel, comment);
+
+		if (StopLossPercent > 0)
 		{
-			SetTakeProfit(marketOrder, takeProfit.Value);
+			var stopLossOffset = price * (StopLossPercent / 100);
+			var stopLoss = price - stopLossOffset * exitMultiplier;
+
+			SetStopLoss(marketOrder, stopLoss, "SL");
+		}
+
+		if (TakeProfitPercent > 0)
+		{
+			var takeProfitOffset = price * (TakeProfitPercent / 100);
+			var takeProfit = price + takeProfitOffset * exitMultiplier;
+
+			SetTakeProfit(marketOrder, takeProfit, "TP");
 		}
 	}
 }
