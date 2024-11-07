@@ -113,9 +113,43 @@ public class VolumeProfile3 : Drawing
 		_rowSize = RowsLayout is RowsLayoutType.NumberOfRows
 			? Math.Max(Symbol.TickSize, area.Range / RowSize)
 			: Symbol.TickSize * RowSize;
+		_rowSize = Symbol.RoundToTick(_rowSize);
 
-		var rows = (int)Math.Round(area.Range / _rowSize);
-		_volumes = new double[rows];
+		if (_rowSize <= 0)
+		{
+			_volumes = [];
+			return;
+		}
+
+		_volumes = new double[(int)Math.Round(area.Range / _rowSize)];
+
+		for (var index = area.FromIndex; index <= area.ToIndex; index++)
+		{
+			var bar = Bars[index];
+			if (bar is null)
+			{
+				continue;
+			}
+
+			var startLevel = Math.Max(0, (int)Math.Round((bar.Low - area.Low) / _rowSize));
+			var endLevel = Math.Min(_volumes.Length - 1, (int)Math.Round((bar.High - area.Low) / _rowSize));
+			var volumePerLevel = bar.Volume / (endLevel - startLevel + 1);
+
+			for (var level = startLevel; level <= endLevel; level++)
+			{
+				_volumes[level] += volumePerLevel;
+			}
+		}
+
+		_pocIndex = 0;
+
+		for (var i = 1; i < _volumes.Length; i++)
+		{
+			if (_volumes[_pocIndex] < _volumes[i])
+			{
+				_pocIndex = i;
+			}
+		}
 	}
 
 	private void Render(IDrawingContext context)
@@ -130,46 +164,36 @@ public class VolumeProfile3 : Drawing
 
 		for (var i = 0; i < _volumes.Length; i++)
 		{
-			var y = pointA.Y + _rowSize * pixelsPerUnitY * i;
-			context.DrawLine(new Point(pointA.X, y), new Point(pointB.X, y), Color.White);
+			var y = pointA.Y + i * _rowSize * pixelsPerUnitY;
+			var volumeRatio = _volumes[i] / _volumes[_pocIndex];
+			var barWidth = (pointB.X - pointA.X) * WidthPercent / 100 * volumeRatio;
+
+			var startPoint = new Point(pointA.X, y);
+			var endPoint = new Point(pointA.X + barWidth, y + _rowSize * pixelsPerUnitY);
+
+			// Use color to differentiate POC, VAH, and VAL
+			Color fillColor;
+
+			if (i == _pocIndex)
+			{
+				fillColor = Color.Orange;
+			}
+			else if (i >= _valIndex && i <= _vahIndex)
+			{
+				fillColor = Color.Blue;
+			}
+			else
+			{
+				fillColor = Color.Gray;
+			}
+
+			context.DrawRectangle(startPoint, endPoint, fillColor, null);
+
+			if (i > 0)
+			{
+				y = pointA.Y + _rowSize * pixelsPerUnitY * i;
+				context.DrawLine(new Point(pointA.X, y), new Point(pointB.X, y), Color.White);
+			}
 		}
-
-		//var separateRows = _volumes.Length < Math.Abs(highY - lowY) / 3;
-
-		//for (var i = 0; i < _volumes.Length; i++)
-		//{
-		//	var level = _volumes[i];
-		//	if (level is null)
-		//	{
-		//		continue;
-		//	}
-
-		//	var volumeRatio = _pocIndex.Volume > 0 ? level.Volume / _pocIndex.Volume : 0;
-		//	var width = (pointB.X - pointA.X) * volumeRatio * WidthPercent / 100;
-
-		//	var y = ChartScale.GetYCoordinateByValue(level.Price);
-		//	if (y > Chart.Height)
-		//	{
-		//		continue;
-		//	}
-
-		//	var startPoint = new Point(pointA.X, y);
-		//	var endPoint = new Point(pointA.X + width, y);
-
-		//	var color = level == _pocIndex ? Color.Red : level == _high ? Color.White : Color.Gray;
-		//	var alpha = (byte)(_valIndex.Index <= level.Index && level.Index <= _vahIndex.Index ? 128 : 64);
-
-		//	color = new(alpha, color.R, color.G, color.B);
-		//	endPoint.Y += Math.Max(0, _rowSize * pixelsPerUnitY - (separateRows ? 1 : 0));
-
-		//	if (endPoint.Y < 0)
-		//	{
-		//		break;
-		//	}
-
-		//	context.DrawRectangle(startPoint, endPoint, color, Color.Black, 0);
-		//}
-
-		//context.DrawText(new Point(0, 0), $"Row size: {_rowSize}\nRow size px:{_rowSize * pixelsPerUnitY}\nRows: {_volumes.Length}", Color.White);
 	}
 }
