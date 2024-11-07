@@ -27,6 +27,7 @@ public class VolumeProfile : Drawing
 
 	public override void SetPoint(IComparable xDataValue, IComparable yDataValue, int index)
 	{
+		//return;
 		if (Points.Count < PointsCount)
 		{
 			return;
@@ -54,6 +55,16 @@ public class VolumeProfile : Drawing
 
 	public override void OnRender(IDrawingContext context)
 	{
+		var fromIndex = Chart.GetBarIndexByXCoordinate(Points[0].X);
+		var toIndex = Chart.GetBarIndexByXCoordinate(Points[1].X);
+
+		if (fromIndex > toIndex)
+		{
+			(fromIndex, toIndex) = (toIndex, fromIndex);
+		}
+
+		Calculate(fromIndex, toIndex);
+
 		if (Levels?.Length > 0)
 		{
 			Render(context);
@@ -85,7 +96,7 @@ public class VolumeProfile : Drawing
 		var rowSize = priceIncrement * Math.Ceiling(1 / (priceIncrement * pixelsPerUnitY));
 
 		var count = (int)(range / rowSize) + 1;
-		var values = new PriceLevel[count];
+		var levels = new PriceLevel[count];
 		var volumeTotal = 0.0;
 
 		for (var index = fromIndex; index <= toIndex; index++)
@@ -103,69 +114,79 @@ public class VolumeProfile : Drawing
 			{
 				var priceIndex = Math.Clamp((int)((price - low) / rowSize), 0, count - 1);
 
-				if (values[priceIndex] == null)
+				if (levels[priceIndex] == null)
 				{
-					values[priceIndex] = new(priceIndex, price);
+					levels[priceIndex] = new(priceIndex, price);
 				}
 
-				values[priceIndex].Volume += volumePerPriceLevel;
+				levels[priceIndex].Volume += volumePerPriceLevel;
 				volumeTotal += volumePerPriceLevel;
-			}
-		}
-
-		PointOfControl = null;
-
-		foreach (var value in values)
-		{
-			if (value is null)
-			{
-				continue;
-			}
-
-			if (PointOfControl is null || PointOfControl.Volume < value.Volume)
-			{
-				PointOfControl = value;
-			}
-		}
-
-		// Step 4: Calculate Value Area based on target percentage (e.g., 70%)
-		var targetVolume = volumeTotal * ValueAreaPercent / 100;
-		var accumulatedVolume = 0.0;
-
-		ValueAreaLow = PointOfControl;
-		ValueAreaHigh = PointOfControl;
-
-		var sortedLevels = values
-			.Where(v => v != null)
-			.OrderByDescending(v => v.Volume)
-			.ThenBy(v => Math.Abs(v.Index - PointOfControl.Index));
-
-		foreach (var level in sortedLevels)
-		{
-			accumulatedVolume += level.Volume;
-
-			if (ValueAreaLow.Index > level.Index)
-			{
-				ValueAreaLow = level;
-			}
-
-			if (ValueAreaHigh.Index < level.Index)
-			{
-				ValueAreaHigh = level;
-			}
-
-			if (accumulatedVolume >= targetVolume)
-			{
-				break;
 			}
 		}
 
 		FromIndex = fromIndex;
 		ToIndex = toIndex;
-		High = values[^1];
-		Low = values[0];
-		Levels = values;
+		Levels = levels;
 		RowSize = rowSize;
+		High = null;
+		Low = null;
+		PointOfControl = null;
+
+		foreach (var level in levels)
+		{
+			if (level is null)
+			{
+				continue;
+			}
+
+			if (High is null || High.Price < level.Price)
+			{
+				High = level;
+			}
+
+			if (Low is null || Low.Price > level.Price)
+			{
+				Low = level;
+			}
+
+			if (PointOfControl is null || PointOfControl.Volume < level.Volume)
+			{
+				PointOfControl = level;
+			}
+		}
+
+		// Step 4: Calculate Value Area based on target percentage (e.g., 70%)
+		var valueAreaVolume = PointOfControl.Volume;
+		var valueAreaVolumeThreshold = volumeTotal * ValueAreaPercent / 100;
+
+		ValueAreaLow = PointOfControl;
+		ValueAreaHigh = PointOfControl;
+
+		while (valueAreaVolume < valueAreaVolumeThreshold)
+		{
+			var expanded = false;
+
+			if (ValueAreaLow != Low && (ValueAreaHigh == High || levels[ValueAreaLow.Index - 1]?.Volume >= levels[ValueAreaHigh.Index + 1]?.Volume))
+			{
+				ValueAreaLow = levels[ValueAreaLow.Index - 1];
+
+				valueAreaVolume += ValueAreaLow?.Volume ?? 0;
+				expanded = true;
+			}
+
+			if (ValueAreaHigh != High && (ValueAreaLow == Low || levels[ValueAreaHigh.Index + 1]?.Volume >= levels[ValueAreaLow.Index - 1]?.Volume))
+			{
+				ValueAreaHigh = Levels[ValueAreaHigh.Index + 1];
+
+				valueAreaVolume += ValueAreaHigh?.Volume ?? 0;
+				expanded = true;
+			}
+
+			if (expanded is false)
+			{
+				break;
+			}
+		}
 	}
 
 	private void Render(IDrawingContext context)
@@ -184,8 +205,7 @@ public class VolumeProfile : Drawing
 
 		context.DrawRectangle(pointA, pointB, null, Color.Red);
 
-		var drawLines = pixelsPerUnitY * RowSize <= 1;
-		var lines = new Dictionary<int, double>();
+		var separateRows = Levels.Length < Math.Abs(highY - lowY) / 3;
 
 		for (var i = 0; i < Levels.Length; i++)
 		{
@@ -198,40 +218,29 @@ public class VolumeProfile : Drawing
 			var volumeRatio = PointOfControl.Volume > 0 ? level.Volume / PointOfControl.Volume : 0;
 			var width = (pointB.X - pointA.X) * volumeRatio * WidthPercent / 100;
 
-			if (drawLines)
+			var y = ChartScale.GetYCoordinateByValue(level.Price + (RowSize / 2));
+			if (y > Chart.Height)
 			{
-				var key = (int)Math.Round(ChartScale.GetYCoordinateByValue(level.Price));
-
-				if (lines.TryGetValue(key, out var w) is false || w < width)
-				{
-					lines[key] = width;
-				}
+				continue;
 			}
-			else
+
+			var startPoint = new Point(pointA.X, y);
+			var endPoint = new Point(pointA.X + width, y);
+
+			var color = level == PointOfControl ? Color.Red : level == High ? Color.White : Color.Gray;
+			var alpha = (byte)(ValueAreaLow.Index <= level.Index && level.Index <= ValueAreaHigh.Index ? 128 : 64);
+
+			color = new(alpha, color.R, color.G, color.B);
+			endPoint.Y += Math.Max(0, RowSize * pixelsPerUnitY - (separateRows ? 1 : 0));
+
+			if (endPoint.Y < 0)
 			{
-				var y = ChartScale.GetYCoordinateByValue(level.Price + (RowSize / 2));
-				var startPoint = new Point(pointA.X, y);
-				var endPoint = new Point(pointA.X + width, y);
-
-				var color = level == PointOfControl ? Color.Red : level == High ? Color.White : Color.Gray;
-				color = new(128, color.R, color.G, color.B);
-
-				endPoint.Y += RowSize * pixelsPerUnitY;
-				context.DrawRectangle(startPoint, endPoint, color, null);
+				break;
 			}
+
+			context.DrawRectangle(startPoint, endPoint, color, Color.Black, 0);
 		}
 
-		if (drawLines)
-		{
-			foreach (var (yCoordinate, width) in lines)
-			{
-				var startPoint = new Point(pointA.X, yCoordinate);
-				var endPoint = new Point(pointA.X + width, yCoordinate);
-
-				context.DrawLine(startPoint, endPoint, "#80808080");
-			}
-		}
-
-		context.DrawText(new Point(0, 0), $"{RowSize}: {drawLines}", Color.White);
+		context.DrawText(new Point(0, 0), $"{RowSize * pixelsPerUnitY}", Color.White);
 	}
 }
