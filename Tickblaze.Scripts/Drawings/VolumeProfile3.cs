@@ -33,12 +33,21 @@ public class VolumeProfile3 : Drawing
 		public double Low { get; set; } = double.MaxValue;
 		public double Volume { get; set; }
 		public double Range => High - Low;
+		public double RowSize { get; set; }
+		public double[] Volumes { get; set; }
 	}
 
 	private Area _area;
-	private double _rowSize;
-	private double[] _volumes;
 	private int _pocIndex, _vahIndex, _valIndex;
+	private Color _color, _colorValueArea;
+
+	protected override void Initialize()
+	{
+		var baseColor = Color.TealGreen;
+
+		_color = new((byte)Math.Round(255 * 0.5), baseColor.R, baseColor.G, baseColor.B);
+		_colorValueArea = new((byte)Math.Round(255 * 0.75), baseColor.R, baseColor.G, baseColor.B);
+	}
 
 	public override void SetPoint(IComparable xDataValue, IComparable yDataValue, int index)
 	{
@@ -95,14 +104,29 @@ public class VolumeProfile3 : Drawing
 			area.Volume += bar.Volume;
 		}
 
-		if (Points[0].Value.Equals(area.High) is false)
-		{
-			Points[0].Value = area.High;
-		}
+		area.RowSize = Symbol.RoundToTick(RowsLayout is RowsLayoutType.NumberOfRows
+			? Math.Max(Symbol.TickSize, area.Range / RowSize)
+			: Symbol.TickSize * RowSize);
 
-		if (Points[1].Value.Equals(area.Low) is false)
+		if (area.RowSize <= 0)
 		{
-			Points[1].Value = area.Low;
+			area.Volumes = [];
+		}
+		else
+		{
+			area.Low = Math.Floor(area.Low / area.RowSize) * area.RowSize;
+			area.High = Math.Ceiling(area.High / area.RowSize) * area.RowSize;
+			area.Volumes = new double[(int)Math.Round(area.Range / area.RowSize)];
+
+			if (Points[0].Value.Equals(area.High) is false)
+			{
+				Points[0].Value = area.High;
+			}
+
+			if (Points[1].Value.Equals(area.Low) is false)
+			{
+				Points[1].Value = area.Low;
+			}
 		}
 
 		return area;
@@ -110,19 +134,6 @@ public class VolumeProfile3 : Drawing
 
 	private void CalculateProfile(Area area)
 	{
-		_rowSize = RowsLayout is RowsLayoutType.NumberOfRows
-			? Math.Max(Symbol.TickSize, area.Range / RowSize)
-			: Symbol.TickSize * RowSize;
-		_rowSize = Symbol.RoundToTick(_rowSize);
-
-		if (_rowSize <= 0)
-		{
-			_volumes = [];
-			return;
-		}
-
-		_volumes = new double[(int)Math.Round(area.Range / _rowSize)];
-
 		for (var index = area.FromIndex; index <= area.ToIndex; index++)
 		{
 			var bar = Bars[index];
@@ -131,69 +142,78 @@ public class VolumeProfile3 : Drawing
 				continue;
 			}
 
-			var startLevel = Math.Max(0, (int)Math.Round((bar.Low - area.Low) / _rowSize));
-			var endLevel = Math.Min(_volumes.Length - 1, (int)Math.Round((bar.High - area.Low) / _rowSize));
+			var startLevel = Math.Max(0, (int)Math.Round((bar.Low - area.Low) / area.RowSize));
+			var endLevel = Math.Min(area.Volumes.Length - 1, (int)Math.Round((bar.High - area.Low) / area.RowSize));
 			var volumePerLevel = bar.Volume / (endLevel - startLevel + 1);
 
 			for (var level = startLevel; level <= endLevel; level++)
 			{
-				_volumes[level] += volumePerLevel;
+				area.Volumes[level] += volumePerLevel;
 			}
 		}
 
 		_pocIndex = 0;
 
-		for (var i = 1; i < _volumes.Length; i++)
+		for (var i = 1; i < area.Volumes.Length; i++)
 		{
-			if (_volumes[_pocIndex] < _volumes[i])
+			if (area.Volumes[_pocIndex] < area.Volumes[i])
 			{
 				_pocIndex = i;
+			}
+		}
+
+		var targetVolume = area.Volume * (ValueAreaPercent / 100);
+		var accumulatedVolume = area.Volumes[_pocIndex];
+
+		_vahIndex = _pocIndex;
+		_valIndex = _pocIndex;
+
+		while (accumulatedVolume < targetVolume)
+		{
+			var expanded = false;
+
+			if (_valIndex > 0 && (_vahIndex == area.Volumes.Length - 1 || area.Volumes[_valIndex - 1] >= area.Volumes[_vahIndex + 1]))
+			{
+				accumulatedVolume += area.Volumes[--_valIndex];
+				expanded = true;
+			}
+
+			if (_vahIndex < area.Volumes.Length - 1 && (_valIndex == 0 || area.Volumes[_vahIndex + 1] >= area.Volumes[_valIndex - 1]))
+			{
+				accumulatedVolume += area.Volumes[++_vahIndex];
+				expanded = true;
+			}
+
+			if (expanded is false)
+			{
+				break;
 			}
 		}
 	}
 
 	private void Render(IDrawingContext context)
 	{
+		var area = _area;
 		var highY = ChartScale.GetYCoordinateByValue(_area.High);
 		var lowY = ChartScale.GetYCoordinateByValue(_area.Low);
 		var pixelsPerUnitY = Math.Abs(highY - lowY) / _area.Range;
+		var adjustSpacing = area.RowSize * pixelsPerUnitY >= 2;
 		var pointA = new Point(Chart.GetXCoordinateByBarIndex(_area.FromIndex), highY);
 		var pointB = new Point(Chart.GetXCoordinateByBarIndex(_area.ToIndex), lowY);
 
-		context.DrawRectangle(pointA, pointB, null, Color.Red);
+		context.DrawRectangle(pointA, pointB, "#1326c6da", null);
 
-		for (var i = 0; i < _volumes.Length; i++)
+		for (var i = 0; i < area.Volumes.Length; i++)
 		{
-			var y = pointA.Y + i * _rowSize * pixelsPerUnitY;
-			var volumeRatio = _volumes[i] / _volumes[_pocIndex];
+			var y = lowY - i * area.RowSize * pixelsPerUnitY;
+			var volumeRatio = area.Volumes[i] / area.Volumes[_pocIndex];
 			var barWidth = (pointB.X - pointA.X) * WidthPercent / 100 * volumeRatio;
 
 			var startPoint = new Point(pointA.X, y);
-			var endPoint = new Point(pointA.X + barWidth, y + _rowSize * pixelsPerUnitY);
+			var endPoint = new Point(pointA.X + barWidth, y - area.RowSize * pixelsPerUnitY + (adjustSpacing ? 1 : 0));
+			var fillColor = i >= _valIndex && i <= _vahIndex ? _colorValueArea : _color;
 
-			// Use color to differentiate POC, VAH, and VAL
-			Color fillColor;
-
-			if (i == _pocIndex)
-			{
-				fillColor = Color.Orange;
-			}
-			else if (i >= _valIndex && i <= _vahIndex)
-			{
-				fillColor = Color.Blue;
-			}
-			else
-			{
-				fillColor = Color.Gray;
-			}
-
-			context.DrawRectangle(startPoint, endPoint, fillColor, null);
-
-			if (i > 0)
-			{
-				y = pointA.Y + _rowSize * pixelsPerUnitY * i;
-				context.DrawLine(new Point(pointA.X, y), new Point(pointB.X, y), Color.White);
-			}
+			context.DrawRectangle(startPoint, endPoint, fillColor, null, adjustSpacing ? 2 : 1);
 		}
 	}
 }
