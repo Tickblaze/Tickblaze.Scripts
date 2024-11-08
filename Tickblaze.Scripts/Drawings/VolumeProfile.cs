@@ -383,7 +383,7 @@ public class VolumeProfile : Drawing
 				var pointA = new Point(leftX, y);
 				var pointB = new Point(rightX, pointA.Y);
 
-				context.DrawLine(pointA, pointB, PocLineColor, PocLineThickness, PocLineStyle);
+				context.DrawLine(pointA, pointB, ValLineColor, ValLineThickness, ValLineStyle);
 			}
 
 			if (VahLineVisible && i == _vahIndex)
@@ -391,7 +391,7 @@ public class VolumeProfile : Drawing
 				var pointA = new Point(leftX, y - barHeight);
 				var pointB = new Point(rightX, pointA.Y);
 
-				context.DrawLine(pointA, pointB, PocLineColor, PocLineThickness, PocLineStyle);
+				context.DrawLine(pointA, pointB, VahLineColor, VahLineThickness, VahLineStyle);
 			}
 
 			if (VolumeDisplay is VolumeType.Total)
