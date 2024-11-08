@@ -5,13 +5,17 @@ namespace Tickblaze.Scripts.PositionSizers;
 
 public class FixedFractionalPercent : PositionSizer
 {
-	[NumericRange(1, 100)]
-	[Parameter("Fractional", Description = "The percentage of the equity to risk. (1 to 100)")]
+	[NumericRange(0.0001, 100)]
+	[Parameter("Strategy Account %", Description = "The percentage of the strategies equity to risk")]
 	public double Fractional { get; set; } = 2;
+	
+	[NumericRange(1, int.MaxValue)]
+	[Parameter("% Price Change to Lose Strategy Account %", Description = "The percentage change in price that it would take to lose our risked equity")]
+	public double PercentChangeToLoseFractional { get; set; } = 100;
 
 	[Parameter("Enable exit sizing", Description = "Use to indicate whether to enable the position sizing script to determine the size of exit orders.")]
 	public bool EnableExitSizing { get; set; } = true;
-
+	
 	public FixedFractionalPercent()
 	{
 		Name = "Fixed Fractional %";
@@ -38,7 +42,7 @@ public class FixedFractionalPercent : PositionSizer
 		}
 
 		var exchangeRate = GetExchangeRate(Symbol.CurrencyCode, Account.BaseCurrencyCode);
-		var size = Math.Floor((Fractional / 100.0 * Account.Equity) / (exchangeRate * price * Symbol.PointValue));
+		var size = Math.Floor((Fractional / 100.0 * Account.Equity) / (exchangeRate * (price * PercentChangeToLoseFractional / 100) * Symbol.PointValue));
 
 		return size;
 	}

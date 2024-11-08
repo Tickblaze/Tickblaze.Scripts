@@ -1,8 +1,7 @@
-﻿using Tickblaze.Scripts.Indicators;
+using Tickblaze.Scripts.Indicators;
 
 namespace Tickblaze.Scripts.Strategies;
 
-//[Browsable(false)]
 public class MovingAverageCrossover : Strategy
 {
 	[Parameter("MA Type")]

@@ -9,7 +9,7 @@ public class OcoTicks : TradeManagementStrategy
 	public int StopLossTicks { get; set; } = 16;
 
 	[Parameter("Position size type")]
-	public SizeType PositionSizeType { get; set; }
+	public SizeType PositionSizeType { get; set; } = SizeType.EquityRisk;
 
 	[NumericRange(0, double.MaxValue)]
 	[Parameter("Position size value")]
