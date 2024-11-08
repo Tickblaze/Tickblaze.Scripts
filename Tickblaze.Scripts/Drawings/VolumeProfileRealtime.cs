@@ -1,5 +1,8 @@
-﻿namespace Tickblaze.Scripts.Drawings;
+﻿using System.ComponentModel;
 
+namespace Tickblaze.Scripts.Drawings;
+
+[Browsable(false)]
 public sealed class RealtimeVolumeProfile : VolumeProfileBase
 {
 	public override int PointsCount => 1;

@@ -1,105 +1,206 @@
 ﻿namespace Tickblaze.Scripts.Drawings;
 
+public class VolumeProfileExtended : VolumeProfile
+{
+	protected override bool ExtendRight => true;
+
+	public VolumeProfileExtended()
+	{
+		Name = "Volume Profile - Extended";
+	}
+}
+
 public class VolumeProfile : Drawing
 {
-	[Parameter("Width %"), NumericRange(0, 100)]
-	public double WidthPercent { get; set; } = 100;
+	public const string InputsGroupName = "Inputs";
+	public const string StyleGroupName = "style";
 
-	[Parameter("Value Area %"), NumericRange(0, 100)]
+	[Parameter("Rows Layout", GroupName = InputsGroupName)]
+	public RowsLayoutType RowsLayout { get; set; } = RowsLayoutType.NumberOfRows;
+
+	[Parameter("Row Size", GroupName = InputsGroupName)]
+	public int RowSize { get; set; } = 24;
+
+	[Parameter("Volume")]
+	public VolumeType VolumeDisplay { get; set; } = VolumeType.UpDown;
+
+	[NumericRange(0, 100)]
+	[Parameter("Value Area %", GroupName = InputsGroupName)]
 	public double ValueAreaPercent { get; set; } = 70;
 
-	public override int PointsCount => 2;
+	[NumericRange(0, 100)]
+	[Parameter("Width (% of the box)", GroupName = StyleGroupName)]
+	public double WidthPercent { get; set; } = 30;
 
-	private int FromIndex { get; set; } = -1;
-	private int ToIndex { get; set; } = -1;
-	private double RowSize { get; set; }
-	private PriceLevel[] Levels { get; set; } = [];
-	private PriceLevel High { get; set; }
-	private PriceLevel Low { get; set; }
-	private PriceLevel PointOfControl { get; set; }
-	private PriceLevel ValueAreaHigh { get; set; }
-	private PriceLevel ValueAreaLow { get; set; }
+	[Parameter("Placement", GroupName = StyleGroupName)]
+	public PlacementType Placement { get; set; } = PlacementType.Left;
 
-	private record PriceLevel(int Index, double Price)
+	[Parameter("Box Line Color", GroupName = StyleGroupName)]
+	public Color BoxLineColor { get; set; } = "#80ffffff";
+
+	[Parameter("Box Line Thickness", GroupName = StyleGroupName)]
+	public int BoxLineThickness { get; set; } = 1;
+
+	[Parameter("Box Line Style", GroupName = StyleGroupName)]
+	public LineStyle BoxLineStyle { get; set; } = LineStyle.Dot;
+
+	[Parameter("Up Volume", GroupName = StyleGroupName)]
+	public Color UpVolumeColor { get; set; } = "#8026c6da";
+
+	[Parameter("Down Volume", GroupName = StyleGroupName)]
+	public Color DownVolumeColor { get; set; } = "#80ec407a";
+
+	[Parameter("Value Area Up", GroupName = StyleGroupName)]
+	public Color ValueAreaUpColor { get; set; } = "#bf26c6da";
+
+	[Parameter("Value Area Down", GroupName = StyleGroupName)]
+	public Color ValueAreaDownColor { get; set; } = "#bfec407a";
+
+	[Parameter("VAH Line Visible?", GroupName = StyleGroupName)]
+	public bool VahLineVisible { get; set; } = false;
+
+	[Parameter("VAH Line Color", GroupName = StyleGroupName)]
+	public Color VahLineColor { get; set; } = Color.White;
+
+	[Parameter("VAH Line Thickness", GroupName = StyleGroupName)]
+	public int VahLineThickness { get; set; } = 2;
+
+	[Parameter("VAH Line Style", GroupName = StyleGroupName)]
+	public LineStyle VahLineStyle { get; set; } = LineStyle.Solid;
+
+	[Parameter("VAL Line Visible?", GroupName = StyleGroupName)]
+	public bool ValLineVisible { get; set; } = false;
+
+	[Parameter("VAL Line Color", GroupName = StyleGroupName)]
+	public Color ValLineColor { get; set; } = Color.White;
+
+	[Parameter("VAL Line Thickness", GroupName = StyleGroupName)]
+	public int ValLineThickness { get; set; } = 2;
+
+	[Parameter("VAL Line Style", GroupName = StyleGroupName)]
+	public LineStyle ValLineStyle { get; set; } = LineStyle.Solid;
+
+	[Parameter("POC Line Visible?", GroupName = StyleGroupName)]
+	public bool PocLineVisible { get; set; } = true;
+
+	[Parameter("POC Line Color", GroupName = StyleGroupName)]
+	public Color PocLineColor { get; set; } = Color.White;
+
+	[Parameter("POC Line Thickness", GroupName = StyleGroupName)]
+	public int PocLineThickness { get; set; } = 2;
+
+	[Parameter("POC Line Style", GroupName = StyleGroupName)]
+	public LineStyle PocLineStyle { get; set; } = LineStyle.Solid;
+
+	public override int PointsCount => ExtendRight ? 1 : 2;
+
+	protected virtual bool ExtendRight => false;
+
+	public enum RowsLayoutType
 	{
+		NumberOfRows,
+		TicksPerRow
+	}
+
+	public enum VolumeType
+	{
+		UpDown,
+		Total,
+		Delta
+	}
+
+	public enum PlacementType
+	{
+		Left,
+		Right
+	}
+
+	private record Area()
+	{
+		public int FromIndex { get; set; }
+		public int ToIndex { get; set; }
+		public double High { get; set; } = double.MinValue;
+		public double Low { get; set; } = double.MaxValue;
 		public double Volume { get; set; }
+		public double Range => High - Low;
+		public double RowSize { get; set; }
+		public Volume[] Volumes { get; set; }
+	}
+
+	private record Volume()
+	{
+		public double Buy { get; set; }
+		public double Sell { get; set; }
+		public double Total => Buy + Sell;
+		public double Delta => Buy - Sell;
+
+		public static implicit operator double(Volume volume) => volume.Total;
+	}
+
+	private Area _area;
+	private int _pocIndex, _vahIndex, _valIndex;
+
+	public VolumeProfile()
+	{
+		Name = "Volume Profile";
 	}
 
 	public override void SetPoint(IComparable xDataValue, IComparable yDataValue, int index)
 	{
-		//return;
-		if (Points.Count < PointsCount)
+		if (Points.Count >= PointsCount)
+		{
+			CalculateArea();
+			AdjustAnchorPoints();
+		}
+	}
+
+	private void AdjustAnchorPoints()
+	{
+		if (_area is null)
 		{
 			return;
 		}
 
-		var fromIndex = Chart.GetBarIndexByXCoordinate(Points[0].X);
-		var toIndex = Chart.GetBarIndexByXCoordinate(Points[1].X);
+		var midPrice = (_area.High + _area.Low) / 2;
 
-		if (fromIndex > toIndex)
+		foreach (var point in Points)
 		{
-			(fromIndex, toIndex) = (toIndex, fromIndex);
-		}
-
-		if (fromIndex != FromIndex || toIndex != ToIndex)
-		{
-			Calculate(fromIndex, toIndex);
-		}
-
-		var midPrice = (High.Price + Low.Price) / 2;
-		if (midPrice.Equals(Points[0].Value) is false || midPrice.Equals(Points[1].Value) is false)
-		{
-			Points[0].Value = Points[1].Value = midPrice;
+			if (point.Value.Equals(midPrice) is false)
+			{
+				point.Value = midPrice;
+			}
 		}
 	}
 
 	public override void OnRender(IDrawingContext context)
 	{
-		var fromIndex = Chart.GetBarIndexByXCoordinate(Points[0].X);
-		var toIndex = Chart.GetBarIndexByXCoordinate(Points[1].X);
+		var area = CalculateArea();
 
-		if (fromIndex > toIndex)
+		if (_area is null || _area != area)
 		{
-			(fromIndex, toIndex) = (toIndex, fromIndex);
+			_area = area;
+
+			AdjustAnchorPoints();
+			CalculateProfile(area);
 		}
 
-		Calculate(fromIndex, toIndex);
-
-		if (Levels?.Length > 0)
-		{
-			Render(context);
-		}
+		Render(context);
 	}
 
-	private void Calculate(int fromIndex, int toIndex)
+	private Area CalculateArea()
 	{
-		var high = double.MinValue;
-		var low = double.MaxValue;
-
-		for (var index = fromIndex; index <= toIndex; index++)
+		var area = new Area()
 		{
-			var bar = Bars[index];
-			if (bar is null)
-			{
-				return;
-			}
+			FromIndex = Chart.GetBarIndexByXCoordinate(Points[0].X),
+			ToIndex = ExtendRight ? Bars.Count - 1 : Chart.GetBarIndexByXCoordinate(Points[1].X)
+		};
 
-			high = Math.Max(high, bar.High);
-			low = Math.Min(low, bar.Low);
+		if (area.FromIndex > area.ToIndex)
+		{
+			(area.FromIndex, area.ToIndex) = (area.ToIndex, area.FromIndex);
 		}
 
-		var range = high - low;
-		var highY = ChartScale.GetYCoordinateByValue(high);
-		var lowY = ChartScale.GetYCoordinateByValue(low);
-		var pixelsPerUnitY = Math.Abs(highY - lowY) / range;
-		var priceIncrement = Math.Max(Symbol.TickSize, Math.Pow(10, -Symbol.Decimals));
-		var rowSize = priceIncrement * Math.Ceiling(1 / (priceIncrement * pixelsPerUnitY));
-
-		var count = (int)(range / rowSize) + 1;
-		var levels = new PriceLevel[count];
-		var volumeTotal = 0.0;
-
-		for (var index = fromIndex; index <= toIndex; index++)
+		for (var index = area.FromIndex; index <= area.ToIndex; index++)
 		{
 			var bar = Bars[index];
 			if (bar is null)
@@ -107,78 +208,117 @@ public class VolumeProfile : Drawing
 				continue;
 			}
 
-			var priceLevelsInBar = (int)((bar.High - bar.Low) / rowSize) + 1;
-			var volumePerPriceLevel = bar.Volume / priceLevelsInBar;
-
-			for (var price = bar.Low; price <= bar.High + rowSize / 2; price += rowSize)
+			if (area.High < bar.High)
 			{
-				var priceIndex = Math.Clamp((int)((price - low) / rowSize), 0, count - 1);
+				area.High = bar.High;
+			}
 
-				if (levels[priceIndex] == null)
+			if (area.Low > bar.Low)
+			{
+				area.Low = bar.Low;
+			}
+
+			area.Volume += bar.Volume;
+		}
+
+		area.RowSize = Symbol.RoundToTick(RowsLayout is RowsLayoutType.NumberOfRows
+			? Math.Max(Symbol.TickSize, area.Range / RowSize)
+			: Symbol.TickSize * RowSize);
+
+		if (area.RowSize <= 0)
+		{
+			area.Volumes = [];
+		}
+		else
+		{
+			area.Low = Math.Floor(area.Low / area.RowSize) * area.RowSize;
+			area.High = Math.Ceiling(area.High / area.RowSize) * area.RowSize;
+			area.Volumes = new Volume[(int)Math.Round(area.Range / area.RowSize)];
+		}
+
+		return area;
+	}
+
+	private void CalculateProfile(Area area)
+	{
+		if (area.Volumes.Length == 0)
+		{
+			return;
+		}
+
+		for (var index = area.FromIndex; index <= area.ToIndex; index++)
+		{
+			var bar = Bars[index];
+			if (bar is null)
+			{
+				continue;
+			}
+
+			var startLevel = Math.Max(0, (int)Math.Round((bar.Low - area.Low) / area.RowSize));
+			var endLevel = Math.Min(area.Volumes.Length - 1, (int)Math.Floor((bar.High - area.Low - Symbol.TickSize / 2) / area.RowSize));
+			var volumePerLevel = bar.Volume / (endLevel - startLevel + 1);
+			var buyVolume = 0.0;
+			var sellVolume = 0.0;
+
+			if (bar.Close > bar.Open)
+			{
+				buyVolume = volumePerLevel;
+			}
+			else if (bar.Close < bar.Open)
+			{
+				sellVolume = volumePerLevel;
+			}
+			else
+			{
+				buyVolume = sellVolume = volumePerLevel / 2;
+			}
+
+			for (var level = startLevel; level <= endLevel; level++)
+			{
+				if (area.Volumes[level] is null)
 				{
-					levels[priceIndex] = new(priceIndex, price);
+					area.Volumes[level] = new();
 				}
 
-				levels[priceIndex].Volume += volumePerPriceLevel;
-				volumeTotal += volumePerPriceLevel;
+				area.Volumes[level].Buy += buyVolume;
+				area.Volumes[level].Sell += sellVolume;
 			}
 		}
 
-		FromIndex = fromIndex;
-		ToIndex = toIndex;
-		Levels = levels;
-		RowSize = rowSize;
-		High = null;
-		Low = null;
-		PointOfControl = null;
+		_pocIndex = 0;
 
-		foreach (var level in levels)
+		for (var i = 0; i < area.Volumes.Length; i++)
 		{
-			if (level is null)
+			if (area.Volumes[i] is null)
 			{
-				continue;
+				area.Volumes[i] = new();
 			}
 
-			if (High is null || High.Price < level.Price)
+			if (area.Volumes[_pocIndex] < area.Volumes[i])
 			{
-				High = level;
-			}
-
-			if (Low is null || Low.Price > level.Price)
-			{
-				Low = level;
-			}
-
-			if (PointOfControl is null || PointOfControl.Volume < level.Volume)
-			{
-				PointOfControl = level;
+				_pocIndex = i;
 			}
 		}
 
-		// Step 4: Calculate Value Area based on target percentage (e.g., 70%)
-		var valueAreaVolume = PointOfControl.Volume;
-		var valueAreaVolumeThreshold = volumeTotal * ValueAreaPercent / 100;
+		var accumulatedVolume = area.Volumes[_pocIndex].Total;
+		var targetVolume = area.Volume * (ValueAreaPercent / 100);
 
-		ValueAreaLow = PointOfControl;
-		ValueAreaHigh = PointOfControl;
+		_vahIndex = _pocIndex;
+		_valIndex = _pocIndex;
 
-		while (valueAreaVolume < valueAreaVolumeThreshold)
+		while (accumulatedVolume < targetVolume)
 		{
 			var expanded = false;
 
-			if (ValueAreaLow != Low && (ValueAreaHigh == High || levels[ValueAreaLow.Index - 1]?.Volume >= levels[ValueAreaHigh.Index + 1]?.Volume))
+			if (_valIndex > 0 && (_vahIndex == area.Volumes.Length - 1 || area.Volumes[_valIndex - 1] >= area.Volumes[_vahIndex + 1]))
 			{
-				ValueAreaLow = levels[ValueAreaLow.Index - 1];
-
-				valueAreaVolume += ValueAreaLow?.Volume ?? 0;
+				accumulatedVolume += area.Volumes[--_valIndex];
 				expanded = true;
 			}
 
-			if (ValueAreaHigh != High && (ValueAreaLow == Low || levels[ValueAreaHigh.Index + 1]?.Volume >= levels[ValueAreaLow.Index - 1]?.Volume))
+			if (_vahIndex < area.Volumes.Length - 1 && (_valIndex == 0 || area.Volumes[_vahIndex + 1] >= area.Volumes[_valIndex - 1]))
 			{
-				ValueAreaHigh = Levels[ValueAreaHigh.Index + 1];
-
-				valueAreaVolume += ValueAreaHigh?.Volume ?? 0;
+				accumulatedVolume += area.Volumes[++_vahIndex];
 				expanded = true;
 			}
 
@@ -191,56 +331,97 @@ public class VolumeProfile : Drawing
 
 	private void Render(IDrawingContext context)
 	{
-		var highY = ChartScale.GetYCoordinateByValue(High.Price);
-		var lowY = ChartScale.GetYCoordinateByValue(Low.Price);
-		var pixelsPerUnitY = Math.Abs(highY - lowY) / (High.Price - Low.Price);
-		var pointA = new Point(Chart.GetXCoordinateByBarIndex(FromIndex), highY);
-		var pointB = new Point(Chart.GetXCoordinateByBarIndex(ToIndex), lowY);
+		var area = _area;
+		var highY = ChartScale.GetYCoordinateByValue(_area.High);
+		var lowY = ChartScale.GetYCoordinateByValue(_area.Low);
+		var leftX = Chart.GetXCoordinateByBarIndex(_area.FromIndex);
+		var rightX = Chart.GetXCoordinateByBarIndex(_area.ToIndex);
 
-		if (true)
+		context.DrawRectangle(new Point(leftX, highY), new Point(rightX, lowY), null, BoxLineColor, BoxLineThickness, BoxLineStyle);
+
+		if (area.Volumes.Length == 0)
 		{
-			pointA.X = Chart.GetXCoordinateByBarIndex(Chart.GetBarIndexByXCoordinate(Points[0].X));
-			pointB.X = Chart.GetXCoordinateByBarIndex(Chart.GetBarIndexByXCoordinate(Points[1].X));
+			return;
 		}
 
-		context.DrawRectangle(pointA, pointB, null, Color.Red);
+		var pixelsPerUnitY = Math.Abs(highY - lowY) / _area.Range;
+		var adjustSpacing = area.RowSize * pixelsPerUnitY > 5;
+		var lineThickness = adjustSpacing ? 2 : 1;
+		var x = Placement is PlacementType.Left ? leftX : rightX;
+		var boxWidth = Placement is PlacementType.Left ? rightX - leftX : leftX - rightX;
 
-		var separateRows = Levels.Length < Math.Abs(highY - lowY) / 3;
-
-		for (var i = 0; i < Levels.Length; i++)
+		for (var i = 0; i < area.Volumes.Length; i++)
 		{
-			var level = Levels[i];
-			if (level is null)
+			var volume = area.Volumes[i];
+			var y = lowY - i * area.RowSize * pixelsPerUnitY;
+			var volumeRatio = volume.Total / area.Volumes[_pocIndex].Total;
+			var barWidth = boxWidth * (WidthPercent / 100) * volumeRatio;
+			var barHeight = area.RowSize * pixelsPerUnitY - (adjustSpacing ? 1 : 0);
+			var isValueArea = i >= _valIndex && i <= _vahIndex;
+
+			if (PocLineVisible && i == _pocIndex)
 			{
-				continue;
+				var pointA = new Point(leftX, y - barHeight / 2);
+				var pointB = new Point(rightX, pointA.Y);
+
+				context.DrawLine(pointA, pointB, PocLineColor, PocLineThickness, PocLineStyle);
 			}
 
-			var volumeRatio = PointOfControl.Volume > 0 ? level.Volume / PointOfControl.Volume : 0;
-			var width = (pointB.X - pointA.X) * volumeRatio * WidthPercent / 100;
-
-			var y = ChartScale.GetYCoordinateByValue(level.Price + (RowSize / 2));
-			if (y > Chart.Height)
+			if (ValLineVisible && i == _valIndex)
 			{
-				continue;
+				var pointA = new Point(leftX, y);
+				var pointB = new Point(rightX, pointA.Y);
+
+				context.DrawLine(pointA, pointB, PocLineColor, PocLineThickness, PocLineStyle);
 			}
 
-			var startPoint = new Point(pointA.X, y);
-			var endPoint = new Point(pointA.X + width, y);
-
-			var color = level == PointOfControl ? Color.Red : level == High ? Color.White : Color.Gray;
-			var alpha = (byte)(ValueAreaLow.Index <= level.Index && level.Index <= ValueAreaHigh.Index ? 128 : 64);
-
-			color = new(alpha, color.R, color.G, color.B);
-			endPoint.Y += Math.Max(0, RowSize * pixelsPerUnitY - (separateRows ? 1 : 0));
-
-			if (endPoint.Y < 0)
+			if (VahLineVisible && i == _vahIndex)
 			{
-				break;
+				var pointA = new Point(leftX, y - barHeight);
+				var pointB = new Point(rightX, pointA.Y);
+
+				context.DrawLine(pointA, pointB, PocLineColor, PocLineThickness, PocLineStyle);
 			}
 
-			context.DrawRectangle(startPoint, endPoint, color, Color.Black, 0);
+			if (VolumeDisplay is VolumeType.Total)
+			{
+				var fillColor = isValueArea ? ValueAreaUpColor : UpVolumeColor;
+
+				DrawColumn(context, new(x, y), barWidth, barHeight, fillColor, lineThickness);
+			}
+			else
+			{
+				var buyWidth = barWidth * (volume.Buy / volume.Total);
+				var sellWidth = barWidth * (volume.Sell / volume.Total);
+				var buyColor = isValueArea ? ValueAreaUpColor : UpVolumeColor;
+				var sellColor = isValueArea ? ValueAreaDownColor : DownVolumeColor;
+
+				if (VolumeDisplay is VolumeType.UpDown)
+				{
+					DrawColumn(context, new(x, y), buyWidth, barHeight, buyColor, lineThickness);
+					DrawColumn(context, new(x + buyWidth, y), sellWidth, barHeight, sellColor, lineThickness);
+				}
+				else if (VolumeDisplay is VolumeType.Delta)
+				{
+					var point = new Point(x, y);
+					var deltaWidth = barWidth * Math.Abs(volume.Delta / volume.Total);
+					var color = GetColorWithOpacity(volume.Delta > 0 ? buyColor : sellColor, 0.5);
+
+					DrawColumn(context, point, barWidth, barHeight, color, lineThickness);
+					DrawColumn(context, point, buyWidth, barHeight, color, lineThickness);
+					DrawColumn(context, point, deltaWidth, barHeight, color, lineThickness);
+				}
+			}
 		}
+	}
 
-		context.DrawText(new Point(0, 0), $"{RowSize * pixelsPerUnitY}", Color.White);
+	private static Color GetColorWithOpacity(Color color, double opacity)
+	{
+		return new((byte)Math.Round(color.A * opacity), color.R, color.G, color.B);
+	}
+
+	private static void DrawColumn(IDrawingContext context, Point point, double width, double height, Color color, int lineThickness)
+	{
+		context.DrawRectangle(point, new Point(point.X + width, point.Y - height), color, null, lineThickness);
 	}
 }

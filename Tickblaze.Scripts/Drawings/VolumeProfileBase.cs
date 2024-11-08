@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace Tickblaze.Scripts.Drawings;
+﻿namespace Tickblaze.Scripts.Drawings;
 
 public abstract class VolumeProfileBase : Drawing
 {

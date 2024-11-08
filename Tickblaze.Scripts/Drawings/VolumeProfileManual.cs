@@ -1,8 +1,9 @@
 ﻿
-using System.Diagnostics;
+using System.ComponentModel;
 
 namespace Tickblaze.Scripts.Drawings;
 
+[Browsable(false)]
 public sealed class ManualVolumeProfile : VolumeProfileBase
 {
 	public ManualVolumeProfile()
