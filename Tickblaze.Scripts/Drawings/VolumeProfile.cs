@@ -124,7 +124,7 @@ public class VolumeProfile : Drawing
 		public double Volume { get; set; }
 		public double Range => High - Low;
 		public double RowSize { get; set; }
-		public Volume[] Volumes { get; set; }
+		public int Rows { get; set; }
 	}
 
 	private record Volume()
@@ -138,6 +138,7 @@ public class VolumeProfile : Drawing
 	}
 
 	private Area _area;
+	private Volume[] _volumes;
 	private int _pocIndex, _vahIndex, _valIndex;
 
 	public VolumeProfile()
@@ -226,23 +227,22 @@ public class VolumeProfile : Drawing
 			: Symbol.TickSize * RowSize);
 
 		var rows = (int)Math.Round(area.Range / area.RowSize);
-		var rowsMaximum = 2_000;
+		var rowsMaximum = 500;
 
 		if (rows > rowsMaximum)
 		{
 			area.RowSize = Symbol.RoundToTick(area.Range / rowsMaximum);
-			rows = rowsMaximum;
 		}
-
+		 
 		if (area.RowSize <= 0)
 		{
-			area.Volumes = [];
+			area.Rows = 0;
 		}
 		else
 		{
 			area.Low = Math.Floor(area.Low / area.RowSize) * area.RowSize;
 			area.High = Math.Ceiling(area.High / area.RowSize) * area.RowSize;
-			area.Volumes = new Volume[rows];
+			area.Rows = (int)Math.Round(area.Range / area.RowSize);
 		}
 
 		return area;
@@ -250,10 +250,12 @@ public class VolumeProfile : Drawing
 
 	private void CalculateProfile(Area area)
 	{
-		if (area.Volumes.Length == 0)
+		if (area.Rows == 0)
 		{
 			return;
 		}
+
+		_volumes = new Volume[area.Rows];
 
 		for (var index = area.FromIndex; index <= area.ToIndex; index++)
 		{
@@ -263,8 +265,8 @@ public class VolumeProfile : Drawing
 				continue;
 			}
 
-			var startLevel = Math.Max(0, (int)Math.Round((bar.Low - area.Low) / area.RowSize));
-			var endLevel = Math.Min(area.Volumes.Length - 1, (int)Math.Floor((bar.High - area.Low - Symbol.TickSize / 2) / area.RowSize));
+			var startLevel = Math.Max(0, (int)Math.Floor((bar.Low - area.Low) / area.RowSize));
+			var endLevel = Math.Min(_volumes.Length - 1, (int)Math.Floor((bar.High - area.Low - Symbol.TickSize / 2) / area.RowSize));
 			var volumePerLevel = bar.Volume / (endLevel - startLevel + 1);
 			var buyVolume = 0.0;
 			var sellVolume = 0.0;
@@ -284,32 +286,32 @@ public class VolumeProfile : Drawing
 
 			for (var level = startLevel; level <= endLevel; level++)
 			{
-				if (area.Volumes[level] is null)
+				if (_volumes[level] is null)
 				{
-					area.Volumes[level] = new();
+					_volumes[level] = new();
 				}
 
-				area.Volumes[level].Buy += buyVolume;
-				area.Volumes[level].Sell += sellVolume;
+				_volumes[level].Buy += buyVolume;
+				_volumes[level].Sell += sellVolume;
 			}
 		}
 
 		_pocIndex = 0;
 
-		for (var i = 0; i < area.Volumes.Length; i++)
+		for (var i = 0; i < _volumes.Length; i++)
 		{
-			if (area.Volumes[i] is null)
+			if (_volumes[i] is null)
 			{
-				area.Volumes[i] = new();
+				_volumes[i] = new();
 			}
 
-			if (area.Volumes[_pocIndex] < area.Volumes[i])
+			if (_volumes[_pocIndex] < _volumes[i])
 			{
 				_pocIndex = i;
 			}
 		}
 
-		var accumulatedVolume = area.Volumes[_pocIndex].Total;
+		var accumulatedVolume = _volumes[_pocIndex].Total;
 		var targetVolume = area.Volume * (ValueAreaPercent / 100);
 
 		_vahIndex = _pocIndex;
@@ -319,15 +321,15 @@ public class VolumeProfile : Drawing
 		{
 			var expanded = false;
 
-			if (_valIndex > 0 && (_vahIndex == area.Volumes.Length - 1 || area.Volumes[_valIndex - 1] >= area.Volumes[_vahIndex + 1]))
+			if (_valIndex > 0 && (_vahIndex == _volumes.Length - 1 || _volumes[_valIndex - 1] >= _volumes[_vahIndex + 1]))
 			{
-				accumulatedVolume += area.Volumes[--_valIndex];
+				accumulatedVolume += _volumes[--_valIndex];
 				expanded = true;
 			}
 
-			if (_vahIndex < area.Volumes.Length - 1 && (_valIndex == 0 || area.Volumes[_vahIndex + 1] >= area.Volumes[_valIndex - 1]))
+			if (_vahIndex < _volumes.Length - 1 && (_valIndex == 0 || _volumes[_vahIndex + 1] >= _volumes[_valIndex - 1]))
 			{
-				accumulatedVolume += area.Volumes[++_vahIndex];
+				accumulatedVolume += _volumes[++_vahIndex];
 				expanded = true;
 			}
 
@@ -348,7 +350,7 @@ public class VolumeProfile : Drawing
 
 		context.DrawRectangle(new Point(leftX, highY), new Point(rightX, lowY), null, BoxLineColor, BoxLineThickness, BoxLineStyle);
 
-		if (area.Volumes.Length == 0)
+		if (area.Rows == 0)
 		{
 			return;
 		}
@@ -359,11 +361,11 @@ public class VolumeProfile : Drawing
 		var x = Placement is PlacementType.Left ? leftX : rightX;
 		var boxWidth = Placement is PlacementType.Left ? rightX - leftX : leftX - rightX;
 
-		for (var i = 0; i < area.Volumes.Length; i++)
+		for (var i = 0; i < _volumes.Length; i++)
 		{
-			var volume = area.Volumes[i];
+			var volume = _volumes[i];
 			var y = lowY - i * area.RowSize * pixelsPerUnitY;
-			var volumeRatio = volume.Total / area.Volumes[_pocIndex].Total;
+			var volumeRatio = volume.Total / _volumes[_pocIndex].Total;
 			var barWidth = boxWidth * (WidthPercent / 100) * volumeRatio;
 			var barHeight = area.RowSize * pixelsPerUnitY - (adjustSpacing ? 1 : 0);
 			var isValueArea = i >= _valIndex && i <= _vahIndex;
