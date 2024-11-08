@@ -225,6 +225,15 @@ public class VolumeProfile : Drawing
 			? Math.Max(Symbol.TickSize, area.Range / RowSize)
 			: Symbol.TickSize * RowSize);
 
+		var rows = (int)Math.Round(area.Range / area.RowSize);
+		var rowsMaximum = 2_000;
+
+		if (rows > rowsMaximum)
+		{
+			area.RowSize = Symbol.RoundToTick(area.Range / rowsMaximum);
+			rows = rowsMaximum;
+		}
+
 		if (area.RowSize <= 0)
 		{
 			area.Volumes = [];
@@ -233,7 +242,7 @@ public class VolumeProfile : Drawing
 		{
 			area.Low = Math.Floor(area.Low / area.RowSize) * area.RowSize;
 			area.High = Math.Ceiling(area.High / area.RowSize) * area.RowSize;
-			area.Volumes = new Volume[(int)Math.Round(area.Range / area.RowSize)];
+			area.Volumes = new Volume[rows];
 		}
 
 		return area;
