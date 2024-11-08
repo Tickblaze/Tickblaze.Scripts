@@ -166,6 +166,11 @@ public class AnchoredVolumeWeightedAveragePrice : Drawing
 		{
 			context.DrawPolygon(points, null, line.Color, line.Thickness, line.LineStyle);
 		}
+
+		if ((DateTime)Point.Time >= Bars[^1].Time)
+		{
+			context.DrawEllipse(Point, 5, 5, "#80808080");
+		}
 	}
 
 	private void Calculate(int index)
