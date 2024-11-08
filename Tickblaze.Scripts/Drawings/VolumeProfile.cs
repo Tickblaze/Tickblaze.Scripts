@@ -143,7 +143,7 @@ public class VolumeProfile : Drawing
 
 	public VolumeProfile()
 	{
-		Name = "Volume Profile";
+		Name = "Volume Profile - Fixed Range";
 	}
 
 	public override void SetPoint(IComparable xDataValue, IComparable yDataValue, int index)
@@ -170,6 +170,14 @@ public class VolumeProfile : Drawing
 			{
 				point.Value = midPrice;
 			}
+		}
+
+		var firstPoint = Points.OrderBy(x => x.X).First();
+		var lastBarTime = Chart.GetTimeByXCoordinate(Chart.GetXCoordinateByBarIndex(Bars.Count - 1));
+
+		if ((DateTime)firstPoint.Time > lastBarTime)
+		{
+			firstPoint.Time = lastBarTime;
 		}
 	}
 
@@ -233,7 +241,7 @@ public class VolumeProfile : Drawing
 		{
 			area.RowSize = Symbol.RoundToTick(area.Range / rowsMaximum);
 		}
-		 
+
 		if (area.RowSize <= 0)
 		{
 			area.Rows = 0;
@@ -346,7 +354,7 @@ public class VolumeProfile : Drawing
 		var highY = ChartScale.GetYCoordinateByValue(_area.High);
 		var lowY = ChartScale.GetYCoordinateByValue(_area.Low);
 		var leftX = Chart.GetXCoordinateByBarIndex(_area.FromIndex);
-		var rightX = Chart.GetXCoordinateByBarIndex(_area.ToIndex);
+		var rightX = ExtendRight ? Chart.GetXCoordinateByBarIndex(_area.ToIndex) : Math.Max(Points[0].X, Points[1].X);
 
 		context.DrawRectangle(new Point(leftX, highY), new Point(rightX, lowY), null, BoxLineColor, BoxLineThickness, BoxLineStyle);
 
