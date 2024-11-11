@@ -53,6 +53,8 @@ public partial class MovingAverageConvergenceDivergence : Indicator
 		_maLong = new MovingAverage(Source, SlowPeriod, movingAverageType);
 		_maShort = new MovingAverage(Source, FastPeriod, movingAverageType);
 		_maSignal = new MovingAverage(Result, SignalPeriod, movingAverageType);
+		
+		ShadeBetween(Result, Signal, Result.Color, Signal.Color, 0.5f);
 	}
 
 	protected override void Calculate(int index)
