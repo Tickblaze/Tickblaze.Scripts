@@ -424,10 +424,10 @@ public class VolumeProfile : Drawing
 				{
 					var point = new Point(x, y);
 					var deltaWidth = barWidth * Math.Abs(volume.Delta / volume.Total);
-					var color = GetColorWithOpacity(volume.Delta > 0 ? buyColor : sellColor, 0.5);
+					var color = GetColorWithOpacity(volume.Delta > 0 ? buyColor : sellColor, 0.33);
 
 					DrawColumn(context, point, barWidth, barHeight, color, lineThickness);
-					DrawColumn(context, point, buyWidth, barHeight, color, lineThickness);
+					DrawColumn(context, point, (deltaWidth + barWidth) / 2, barHeight, color, lineThickness);
 					DrawColumn(context, point, deltaWidth, barHeight, color, lineThickness);
 				}
 			}
