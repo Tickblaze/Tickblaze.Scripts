@@ -97,6 +97,7 @@ public sealed class RiskReward : Drawing
 	}
 
 	private record Target(double Ratio, double ExitPercent, Color Color);
+	private record PriceLevel(double Price, string Text, Color Color);
 
 	public RiskReward()
 	{
@@ -116,8 +117,11 @@ public sealed class RiskReward : Drawing
 		var stopQuantity = Math.Max(Symbol.MinimumVolume, Symbol.NormalizeVolume(StopRiskValue * Direction / (stopTicks * Symbol.TickValue), RoundingMode.Down));
 		var stopLoss = stopTicks * Symbol.TickValue * (double)stopQuantity;
 
-		DrawPriceLevel(context, PriceLevelType.Entry, stopQuantity, entryPrice, 0, 0, EntryColor);
-		DrawPriceLevel(context, PriceLevelType.StopLoss, stopQuantity, stopPrice, -stopTicks, -stopLoss, StopColor);
+		var levels = new List<PriceLevel>()
+		{
+			new(entryPrice, GetText(PriceLevelType.Entry, stopQuantity, entryPrice, 0,0), EntryColor),
+			new(stopPrice, GetText(PriceLevelType.StopLoss, stopQuantity, stopPrice, -stopTicks, -stopLoss), StopColor),
+		};
 
 		var remainingQuantity = stopQuantity;
 		var targets = new List<Target>();
@@ -151,19 +155,19 @@ public sealed class RiskReward : Drawing
 			var profit = (double)quantity * ticks * Symbol.TickValue;
 
 			remainingQuantity -= quantity;
+			levels.Add(new(price, GetText(PriceLevelType.TakeProfit, quantity, price, ticks, profit), target.Color));
+		}
 
-			DrawPriceLevel(context, PriceLevelType.TakeProfit, quantity, price, ticks, profit, target.Color);
+		var minimumWidth = levels.Max(x => context.MeasureText(x.Text, TextFont).Width);
+
+		foreach (var level in levels)
+		{
+			DrawPriceLevel(context, level, minimumWidth);
 		}
 	}
 
-	private void DrawPriceLevel(IDrawingContext context, PriceLevelType type, decimal quantity, double price, int ticks, double profit, Color color)
+	private string GetText(PriceLevelType type, decimal quantity, double price, int ticks, double profit)
 	{
-		var y = ChartScale.GetYCoordinateByValue(price);
-		var pointA = new Point(Math.Min(PointA.X, PointB.X), y);
-		var pointB = new Point(Math.Max(PointA.X, PointB.X), y);
-
-		ticks *= Direction;
-
 		if (profit.Equals(0) is false)
 		{
 			profit *= Direction;
@@ -203,8 +207,25 @@ public sealed class RiskReward : Drawing
 			}
 		}
 
-		var text = string.Join(" | ", textValues);
-		var textSize = context.MeasureText(text, TextFont);
+		return string.Join(" | ", textValues);
+	}
+
+	private void DrawPriceLevel(IDrawingContext context, PriceLevel level, double? width = null)
+	{
+		var y = ChartScale.GetYCoordinateByValue(level.Price);
+		var pointA = new Point(Math.Min(PointA.X, PointB.X), y);
+		var pointB = new Point(Math.Max(PointA.X, PointB.X), y);
+
+		if (width.HasValue)
+		{
+			var x = pointA.X + width.Value;
+			if (x > pointB.X)
+			{
+				pointB.X = x;
+			}
+		}
+
+		var textSize = context.MeasureText(level.Text, TextFont);
 		var textOrigin = new Point(TextPosition is TextPositionType.Left ? pointA.X : pointB.X - textSize.Width, y - textSize.Height);
 
 		if (ExtendLinesRight)
@@ -227,7 +248,7 @@ public sealed class RiskReward : Drawing
 			}
 		}
 
-		context.DrawLine(pointA, pointB, color, LineThickness, LineStyle);
-		context.DrawText(textOrigin, text, color, TextFont);
+		context.DrawLine(pointA, pointB, level.Color, LineThickness, LineStyle);
+		context.DrawText(textOrigin, level.Text, level.Color, TextFont);
 	}
 }

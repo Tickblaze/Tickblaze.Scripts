@@ -32,6 +32,8 @@ public class RsiOverboughtOversold : Strategy
 
 	private RelativeStrengthIndex _rsi;
 
+	private bool firstBar = true;
+
 	public RsiOverboughtOversold()
 	{
 		Name = "RSI Overbought/Oversold";
@@ -49,8 +51,9 @@ public class RsiOverboughtOversold : Strategy
 
 	protected override void OnBar(int index)
 	{
-		if (index == 0)
+		if (firstBar)
 		{
+			firstBar = false;
 			return;
 		}
 
