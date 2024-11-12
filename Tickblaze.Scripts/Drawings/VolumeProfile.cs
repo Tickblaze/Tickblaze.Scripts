@@ -6,7 +6,7 @@ public class VolumeProfileExtended : VolumeProfile
 
 	public VolumeProfileExtended()
 	{
-		Name = "Volume Profile - Extended";
+		Name = "Volume Profile - Realtime";
 	}
 }
 
@@ -15,82 +15,82 @@ public class VolumeProfile : Drawing
 	public const string InputsGroupName = "Inputs";
 	public const string StyleGroupName = "style";
 
-	[Parameter("Rows Layout", GroupName = InputsGroupName)]
-	public RowsLayoutType RowsLayout { get; set; } = RowsLayoutType.NumberOfRows;
+	[Parameter("Histo Size Type", Description = "Determines how histogram rows are calculated (by count or ticks)", GroupName = InputsGroupName)]
+	public RowsLayoutType RowsLayout { get; set; } = RowsLayoutType.Count;
 
-	[Parameter("Row Size", GroupName = InputsGroupName)]
-	public int RowSize { get; set; } = 24;
-
-	[Parameter("Volume")]
-	public VolumeType VolumeDisplay { get; set; } = VolumeType.UpDown;
+	[Parameter("Histo Size Value", Description = "Defines the size of the histogram rows", GroupName = InputsGroupName)]
+	public int RowsSize { get; set; } = 24;
 
 	[NumericRange(0, 100)]
-	[Parameter("Value Area %", GroupName = InputsGroupName)]
+	[Parameter("Histo Width %", Description = "Width of the histogram as a percentage of box width", GroupName = StyleGroupName)]
+	public double RowsWidthPercent { get; set; } = 30;
+
+	[Parameter("Histo Location", Description = "Location of histogram (left or right side of box)", GroupName = StyleGroupName)]
+	public PlacementType RowsPlacement { get; set; } = PlacementType.Left;
+
+	[NumericRange(0, 100)]
+	[Parameter("Value Area %", Description = "Percentage of total volume considered in the value area", GroupName = InputsGroupName)]
 	public double ValueAreaPercent { get; set; } = 70;
 
-	[NumericRange(0, 100)]
-	[Parameter("Width (% of the box)", GroupName = StyleGroupName)]
-	public double WidthPercent { get; set; } = 30;
+	[Parameter("Value Area Color", Description = "Color of the value area", GroupName = StyleGroupName)]
+	public Color ValueAreaColor { get; set; } = "#bf808080";
 
-	[Parameter("Placement", GroupName = StyleGroupName)]
-	public PlacementType Placement { get; set; } = PlacementType.Left;
+	[Parameter("Above Value Area Color", Description = "Color of area above the value area", GroupName = StyleGroupName)]
+	public Color ValueAreaAboveColor { get; set; } = "#80ff0000";
 
-	[Parameter("Box Line Color", GroupName = StyleGroupName)]
+	[Parameter("Below Value Area Color", Description = "Color of area below the value area", GroupName = StyleGroupName)]
+	public Color ValueAreaBelowColor { get; set; } = "#80ff0000";
+
+	[Parameter("Outline Color", Description = "Color of the volume profile outline box", GroupName = StyleGroupName)]
 	public Color BoxLineColor { get; set; } = "#80ffffff";
 
-	[Parameter("Box Line Thickness", GroupName = StyleGroupName)]
+	[Parameter("Outline Thickness", Description = "Thickness of the volume profile outline box", GroupName = StyleGroupName)]
 	public int BoxLineThickness { get; set; } = 1;
 
-	[Parameter("Box Line Style", GroupName = StyleGroupName)]
+	[Parameter("Outline Style", Description = "Style of the volume profile outline box (solid, dashed, etc.)", GroupName = StyleGroupName)]
 	public LineStyle BoxLineStyle { get; set; } = LineStyle.Dot;
 
-	[Parameter("Up Volume", GroupName = StyleGroupName)]
-	public Color UpVolumeColor { get; set; } = "#8026c6da";
-
-	[Parameter("Down Volume", GroupName = StyleGroupName)]
-	public Color DownVolumeColor { get; set; } = "#80ec407a";
-
-	[Parameter("Value Area Up", GroupName = StyleGroupName)]
-	public Color ValueAreaUpColor { get; set; } = "#bf26c6da";
-
-	[Parameter("Value Area Down", GroupName = StyleGroupName)]
-	public Color ValueAreaDownColor { get; set; } = "#bfec407a";
-
-	[Parameter("VAH Line Visible?", GroupName = StyleGroupName)]
+	[Parameter("VAH Line Visible?", Description = "Show/Hide the Value Area High (VAH) line", GroupName = StyleGroupName)]
 	public bool VahLineVisible { get; set; } = false;
 
-	[Parameter("VAH Line Color", GroupName = StyleGroupName)]
+	[Parameter("VAH Line Color", Description = "Color of the Value Area High (VAH) line", GroupName = StyleGroupName)]
 	public Color VahLineColor { get; set; } = Color.White;
 
-	[Parameter("VAH Line Thickness", GroupName = StyleGroupName)]
+	[Parameter("VAH Line Thickness", Description = "Thickness of the Value Area High (VAH) line", GroupName = StyleGroupName)]
 	public int VahLineThickness { get; set; } = 2;
 
-	[Parameter("VAH Line Style", GroupName = StyleGroupName)]
+	[Parameter("VAH Line Style", Description = "Style of the Value Area High (VAH) line", GroupName = StyleGroupName)]
 	public LineStyle VahLineStyle { get; set; } = LineStyle.Solid;
 
-	[Parameter("VAL Line Visible?", GroupName = StyleGroupName)]
+	[Parameter("VAL Line Visible?", Description = "Show/Hide the Value Area Low (VAL) line", GroupName = StyleGroupName)]
 	public bool ValLineVisible { get; set; } = false;
 
-	[Parameter("VAL Line Color", GroupName = StyleGroupName)]
+	[Parameter("VAL Line Color", Description = "Color of the Value Area Low (VAL) line", GroupName = StyleGroupName)]
 	public Color ValLineColor { get; set; } = Color.White;
 
-	[Parameter("VAL Line Thickness", GroupName = StyleGroupName)]
+	[Parameter("VAL Line Thickness", Description = "Thickness of the Value Area Low (VAL) line", GroupName = StyleGroupName)]
 	public int ValLineThickness { get; set; } = 2;
 
-	[Parameter("VAL Line Style", GroupName = StyleGroupName)]
+	[Parameter("VAL Line Style", Description = "Style of the Value Area Low (VAL) line", GroupName = StyleGroupName)]
 	public LineStyle ValLineStyle { get; set; } = LineStyle.Solid;
 
-	[Parameter("POC Line Visible?", GroupName = StyleGroupName)]
+	[Parameter("POC Line Visible?", Description = "Show/Hide the Point of Control (POC) line", GroupName = StyleGroupName)]
 	public bool PocLineVisible { get; set; } = true;
 
-	[Parameter("POC Line Color", GroupName = StyleGroupName)]
-	public Color PocLineColor { get; set; } = Color.White;
+	[Parameter("POC Line Color", Description = "Color of the Point of Control (POC) line", GroupName = StyleGroupName)]
+	public Color PocLineColor { get; set; } = Color.Yellow;
 
-	[Parameter("POC Line Thickness", GroupName = StyleGroupName)]
+	[Parameter("POC Line Thickness", Description = "Thickness of the Point of Control (POC) line", GroupName = StyleGroupName)]
 	public int PocLineThickness { get; set; } = 2;
 
-	[Parameter("POC Line Style", GroupName = StyleGroupName)]
+	[Parameter("POC Line Style", Description = "Style of the Point of Control (POC) line", GroupName = StyleGroupName)]
 	public LineStyle PocLineStyle { get; set; } = LineStyle.Solid;
+
+	[Parameter("Show VAH/VAL/POC Prices?", Description = "Displays prices for VAH, VAL, and POC levels")]
+	public bool ShowPrices { get; set; } = false;
+
+	[Parameter("Font", Description = "Font for displaying VAH/VAL/POC prices")]
+	public Font Font { get; set; } = new("Arial", 12);
 
 	public override int PointsCount => ExtendRight ? 1 : 2;
 
@@ -98,15 +98,8 @@ public class VolumeProfile : Drawing
 
 	public enum RowsLayoutType
 	{
-		NumberOfRows,
-		TicksPerRow
-	}
-
-	public enum VolumeType
-	{
-		UpDown,
-		Total,
-		Delta
+		Count,
+		Ticks
 	}
 
 	public enum PlacementType
@@ -143,7 +136,7 @@ public class VolumeProfile : Drawing
 
 	public VolumeProfile()
 	{
-		Name = "Volume Profile - Fixed Range";
+		Name = "Volume Profile - Manual";
 	}
 
 	public override void SetPoint(IComparable xDataValue, IComparable yDataValue, int index)
@@ -230,9 +223,9 @@ public class VolumeProfile : Drawing
 			area.Volume += bar.Volume;
 		}
 
-		area.RowSize = Symbol.RoundToTick(RowsLayout is RowsLayoutType.NumberOfRows
-			? Math.Max(Symbol.TickSize, area.Range / RowSize)
-			: Symbol.TickSize * RowSize);
+		area.RowSize = Symbol.RoundToTick(RowsLayout is RowsLayoutType.Count
+			? Math.Max(Symbol.TickSize, area.Range / RowsSize)
+			: Symbol.TickSize * RowsSize);
 
 		var rows = (int)Math.Round(area.Range / area.RowSize);
 		var rowsMaximum = 500;
@@ -351,10 +344,16 @@ public class VolumeProfile : Drawing
 	private void Render(IDrawingContext context)
 	{
 		var area = _area;
-		var highY = ChartScale.GetYCoordinateByValue(_area.High);
-		var lowY = ChartScale.GetYCoordinateByValue(_area.Low);
-		var leftX = Chart.GetXCoordinateByBarIndex(_area.FromIndex);
-		var rightX = ExtendRight ? Chart.GetXCoordinateByBarIndex(_area.ToIndex) : Math.Max(Points[0].X, Points[1].X);
+		if (area.FromIndex > Chart.LastVisibleBarIndex || area.ToIndex < Chart.FirstVisibleBarIndex)
+		{
+			System.Diagnostics.Debug.WriteLine("Hidden");
+			return;
+		}
+
+		var highY = ChartScale.GetYCoordinateByValue(area.High);
+		var lowY = ChartScale.GetYCoordinateByValue(area.Low);
+		var leftX = Chart.GetXCoordinateByBarIndex(area.FromIndex);
+		var rightX = ExtendRight ? Chart.GetXCoordinateByBarIndex(area.ToIndex) : Math.Max(Points[0].X, Points[1].X);
 
 		context.DrawRectangle(new Point(leftX, highY), new Point(rightX, lowY), null, BoxLineColor, BoxLineThickness, BoxLineStyle);
 
@@ -363,27 +362,36 @@ public class VolumeProfile : Drawing
 			return;
 		}
 
-		var pixelsPerUnitY = Math.Abs(highY - lowY) / _area.Range;
+		var pixelsPerUnitY = Math.Abs(highY - lowY) / area.Range;
 		var adjustSpacing = area.RowSize * pixelsPerUnitY > 5;
 		var lineThickness = adjustSpacing ? 2 : 1;
-		var x = Placement is PlacementType.Left ? leftX : rightX;
-		var boxWidth = Placement is PlacementType.Left ? rightX - leftX : leftX - rightX;
+		var x = RowsPlacement is PlacementType.Left ? leftX : rightX;
+		var boxWidth = RowsPlacement is PlacementType.Left ? rightX - leftX : leftX - rightX;
 
 		for (var i = 0; i < _volumes.Length; i++)
 		{
 			var volume = _volumes[i];
 			var y = lowY - i * area.RowSize * pixelsPerUnitY;
+			if (y < 0)
+			{
+				break;
+			}
+
 			var volumeRatio = volume.Total / _volumes[_pocIndex].Total;
-			var barWidth = boxWidth * (WidthPercent / 100) * volumeRatio;
+			var barWidth = boxWidth * (RowsWidthPercent / 100) * volumeRatio;
 			var barHeight = area.RowSize * pixelsPerUnitY - (adjustSpacing ? 1 : 0);
-			var isValueArea = i >= _valIndex && i <= _vahIndex;
+
+			if (y - barHeight > Chart.Height)
+			{
+				continue;
+			}
 
 			if (PocLineVisible && i == _pocIndex)
 			{
 				var pointA = new Point(leftX, y - barHeight / 2);
 				var pointB = new Point(rightX, pointA.Y);
 
-				context.DrawLine(pointA, pointB, PocLineColor, PocLineThickness, PocLineStyle);
+				DrawPriceLevel(context, pointA, pointB, PocLineColor, PocLineThickness, PocLineStyle);
 			}
 
 			if (ValLineVisible && i == _valIndex)
@@ -391,7 +399,7 @@ public class VolumeProfile : Drawing
 				var pointA = new Point(leftX, y);
 				var pointB = new Point(rightX, pointA.Y);
 
-				context.DrawLine(pointA, pointB, ValLineColor, ValLineThickness, ValLineStyle);
+				DrawPriceLevel(context, pointA, pointB, ValLineColor, ValLineThickness, ValLineStyle);
 			}
 
 			if (VahLineVisible && i == _vahIndex)
@@ -399,44 +407,34 @@ public class VolumeProfile : Drawing
 				var pointA = new Point(leftX, y - barHeight);
 				var pointB = new Point(rightX, pointA.Y);
 
-				context.DrawLine(pointA, pointB, VahLineColor, VahLineThickness, VahLineStyle);
+				DrawPriceLevel(context, pointA, pointB, VahLineColor, VahLineThickness, VahLineStyle);
 			}
 
-			if (VolumeDisplay is VolumeType.Total)
-			{
-				var fillColor = isValueArea ? ValueAreaUpColor : UpVolumeColor;
+			var color = i > _vahIndex ? ValueAreaAboveColor : i < _valIndex ? ValueAreaBelowColor : ValueAreaColor;
 
-				DrawColumn(context, new(x, y), barWidth, barHeight, fillColor, lineThickness);
-			}
-			else
-			{
-				var buyWidth = barWidth * (volume.Buy / volume.Total);
-				var sellWidth = barWidth * (volume.Sell / volume.Total);
-				var buyColor = isValueArea ? ValueAreaUpColor : UpVolumeColor;
-				var sellColor = isValueArea ? ValueAreaDownColor : DownVolumeColor;
-
-				if (VolumeDisplay is VolumeType.UpDown)
-				{
-					DrawColumn(context, new(x, y), buyWidth, barHeight, buyColor, lineThickness);
-					DrawColumn(context, new(x + buyWidth, y), sellWidth, barHeight, sellColor, lineThickness);
-				}
-				else if (VolumeDisplay is VolumeType.Delta)
-				{
-					var point = new Point(x, y);
-					var deltaWidth = barWidth * Math.Abs(volume.Delta / volume.Total);
-					var color = GetColorWithOpacity(volume.Delta > 0 ? buyColor : sellColor, 0.33);
-
-					DrawColumn(context, point, barWidth, barHeight, color, lineThickness);
-					DrawColumn(context, point, (deltaWidth + barWidth) / 2, barHeight, color, lineThickness);
-					DrawColumn(context, point, deltaWidth, barHeight, color, lineThickness);
-				}
-			}
+			DrawColumn(context, new(x, y), barWidth, barHeight, color, lineThickness);
 		}
 	}
 
-	private static Color GetColorWithOpacity(Color color, double opacity)
+	private void DrawPriceLevel(IDrawingContext context, IPoint pointA, IPoint pointB, Color color, int thickness, LineStyle lineStyle)
 	{
-		return new((byte)Math.Round(color.A * opacity), color.R, color.G, color.B);
+		context.DrawLine(pointA, pointB, color, thickness, lineStyle);
+
+		if (ShowPrices is false)
+		{
+			return;
+		}
+
+		var price = Symbol.RoundToTick(ChartScale.GetValueByYCoordinate(pointA.Y));
+		var text = Symbol.FormatPrice(price);
+		var textOrigin = new Point(pointA);
+
+		if (RowsPlacement is PlacementType.Left)
+		{
+			textOrigin.X = pointB.X - context.MeasureText(text, Font).Width;
+		}
+
+		context.DrawText(textOrigin, text, color, Font);
 	}
 
 	private static void DrawColumn(IDrawingContext context, Point point, double width, double height, Color color, int lineThickness)
