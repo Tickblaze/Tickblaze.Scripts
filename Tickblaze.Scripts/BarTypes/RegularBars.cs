@@ -10,16 +10,18 @@ public sealed class RegularBars : BarType
 		Name = "Regular Bars";
 	}
 
-	public override void OnDataPoint(DateTime time, double open, double high, double low, double close, double volume)
-	{
-		var lastBar = Bars.Count > 0 ? Bars[^1] : null;
+	public override void OnDataPoint(Bar bar)
+    {
+        var (time, open, high, low, close, volume) = bar;
+
+        var lastBar = Bars.Count > 0 ? Bars[^1] : null;
 		if (lastBar is null || lastBar.Time < time)
 		{
-			AddBar(time, open, high, low, close, volume);
+			AddBar(bar);
 		}
 		else
 		{
-			UpdateBar(time, open, high, low, close, volume);
+			UpdateBar(bar);
 		}
 	}
 }
