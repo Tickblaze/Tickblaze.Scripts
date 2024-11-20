@@ -5,3 +5,23 @@
     box-sizing: border-box;
     align-self: center;
 }
+
+/* This rule hides the display of inherited types */
+.inheritance {
+    display: none !important;
+}
+
+/* This rule hides the display of inherited members */
+.inheritedMembers {
+    display: none !important;
+}
+
+/* This rule hides the display of implemented types */
+.implements {
+    display: none !important;
+}
+
+/* This rule hides the display of derived types */
+.derived {
+    display: none !important;
+}
