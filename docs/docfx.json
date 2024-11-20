@@ -1,0 +1,47 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": [
+            "src/Tickblaze.Scripts.Api.dll"
+          ]
+        }
+      ],
+      "dest": "api",
+      "basePath": "/Docs"
+    }
+  ],
+
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "_site/**"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "modern",
+      "templates/custom/default"
+    ],
+    "globalMetadata": {
+      "_appName": "Tickblaze",
+      "_appTitle": "Tickblaze",
+      "_appLogoPath": "images/logo.png",
+      "_enableSearch": true,
+      "pdf": false
+    }
+  }
+}

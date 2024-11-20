@@ -14,7 +14,6 @@ public partial class CurrentDayOHL : Indicator
 	[Plot("Low")]
 	public PlotSeries Low { get; set; } = new(Color.Blue, LineStyle.Dash);
 
-	private Bar _dailyBar;
 	private IExchangeSession _lastSession;
 
 	public CurrentDayOHL()
@@ -26,9 +25,11 @@ public partial class CurrentDayOHL : Indicator
 
 	protected override void Calculate(int index)
 	{
-		if (index == 0)
+		if (index > 0)
 		{
-			return;
+			Open[index] = Open[index - 1];
+			High[index] = High[index - 1];
+			Low[index] = Low[index - 1];
 		}
 
 		var bar = Bars[index];
@@ -38,17 +39,15 @@ public partial class CurrentDayOHL : Indicator
 		if (isNewSession)
 		{
 			_lastSession = currentSession;
-			_dailyBar = new(currentSession.StartUtcDateTime, bar.Open, bar.High, bar.Low, bar.Close, 0);
+
+			Open[index] = bar.Open;
+			High[index] = bar.High;
+			Low[index] = bar.Low;
 		}
 		else
 		{
-			_dailyBar.High = Math.Max(_dailyBar.High, bar.High);
-			_dailyBar.Low = Math.Min(_dailyBar.Low, bar.Low);
-			_dailyBar.Close = bar.Close;
+			High[index] = Math.Max(High[index], bar.High);
+			Low[index] = Math.Min(Low[index], bar.Low);
 		}
-
-		Open[index] = _dailyBar.Open;
-		High[index] = _dailyBar.High;
-		Low[index] = _dailyBar.Low;
 	}
 }
