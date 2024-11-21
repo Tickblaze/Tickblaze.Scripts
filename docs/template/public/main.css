@@ -3,7 +3,7 @@ img#logo {
 }
 
 details.typelist-details summary {
-  font-weight: 600;
+  font-weight: 500;
   margin-top: 1rem;
   cursor: pointer !important;
   user-select: none;
@@ -11,15 +11,11 @@ details.typelist-details summary {
 
 details.typelist-details summary::before {
     display: inline-block;
-    width: .85rem;
-    cursor: pointer;
     font-family: bootstrap-icons;
     font-size: .8em;
     content: "\f285";
-    position: absolute;
-    margin-top: .2em;
-    margin-left: -.85rem;
     transform-origin: .5em 50%;
+    margin-right: .2rem;
 }
 
 details[open].typelist-details summary::before {
