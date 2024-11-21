@@ -1,4 +1,5 @@
 - name: Getting Started
+  expanded: true
   items:
     - name: Visual Studio
       href: ../index.md
@@ -7,6 +8,7 @@
     - name: CLI
       href: get-started/cli.md
 - name: Examples
+  expanded: true
   items:
     - name: Drawings
       href: https://github.com/Tickblaze/Tickblaze.Scripts/tree/main/src/Drawings

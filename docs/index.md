@@ -29,13 +29,13 @@ Follow these steps to create your first custom indicator for Tickblaze using Vis
    - Select the package and click **Install**.
 3. **Accept License Agreements** if prompted.
 
-### 3. Add a New Class
+### 3. Create Your Indicator
 
 1. **Create a New Class**:
    - In **Solution Explorer**, right-click on the **project**.
    - Select **Add > Class...**.
 2. **Name the Class**:
-   - Enter a **name** for your class (e.g., `MyClass.cs`) and click **Add**.
+   - Enter a **name** for your class (e.g., `TypicalPrice.cs`) and click **Add**.
 3. **Define the Class**:
    - Open the new `.cs` file and replace its contents with:
    ```cs
