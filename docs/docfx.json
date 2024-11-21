@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
   "metadata": [
     {
       "src": [
@@ -8,9 +9,7 @@
           ]
         }
       ],
-      "dest": "api",
-      "outputFormat": "apiPage",
-      "basePath": "/Docs"
+      "dest": "api"
     }
   ],
   "build": {
@@ -35,12 +34,14 @@
     "template": [
       "default",
       "modern",
-      "my-template"
+      "template"
     ],
     "globalMetadata": {
-      "_appName": "Tickblaze",
       "_appTitle": "Tickblaze",
+      "_appName": "Tickblaze",
+      "_appFooter": "<span>© Copyright 2024. All rights reserved. <a href=\"https://tickblaze.com\">Tickblaze</a>.<span>",
       "_appLogoPath": "images/logo.png",
+      "_appFaviconPath": "images/favicon.ico",
       "_enableSearch": true,
       "pdf": false
     }

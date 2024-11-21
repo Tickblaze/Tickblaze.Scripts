@@ -1,14 +1,14 @@
 export default {
-    defaultTheme: 'dark',
+    defaultTheme: 'auto',
     iconLinks: [
       {
         icon: 'github',
-        href: 'https://github.com/dotnet/docfx',
+        href: 'https://github.com/Tickblaze/Tickblaze.Scripts',
         title: 'GitHub'
       },
       {
         icon: 'twitter',
-        href: 'https://twitter.com',
+        href: 'https://x.com/tickblaze',
         title: 'Twitter'
       }
     ]
