@@ -1,5 +1,4 @@
-﻿
-namespace Tickblaze.Scripts.Drawings;
+﻿namespace Tickblaze.Scripts.Drawings;
 
 public class AnchoredVolumeWeightedAveragePrice : Drawing
 {
@@ -63,6 +62,7 @@ public class AnchoredVolumeWeightedAveragePrice : Drawing
 	private record LineSettings(double Multiplier, Color Color, int Thickness, LineStyle LineStyle);
 
 	private int? _fromIndex;
+	private int _lastCalculatedIndex;
 	private Series<double> _cumulativeVolume, _cumulativeTypicalVolume, _cumulativeVariance;
 	private Series<double> _vwap, _deviation;
 	private List<LineSettings> _lineSettings;
@@ -150,17 +150,17 @@ public class AnchoredVolumeWeightedAveragePrice : Drawing
 		var fromIndex = Chart.GetBarIndexByXCoordinate((int)Point.X);
 		var toIndex = Bars.Count - 1;
 
-		if (_fromIndex is null || _fromIndex != fromIndex)
+		if (!Nullable.Equals(_fromIndex, fromIndex))
 		{
-			_fromIndex = fromIndex;
+			_fromIndex = _lastCalculatedIndex = fromIndex;
+        }
 
-			for (var index = fromIndex; index < toIndex; index++)
-			{
-				Calculate(index);
-			}
-		}
+		while (_lastCalculatedIndex <= toIndex)
+		{
+            Calculate(_lastCalculatedIndex);
 
-		Calculate(toIndex);
+			_lastCalculatedIndex++;
+        }
 
 		var firstVisibleBarIndex = Chart.FirstVisibleBarIndex;
 		if (firstVisibleBarIndex > toIndex)
