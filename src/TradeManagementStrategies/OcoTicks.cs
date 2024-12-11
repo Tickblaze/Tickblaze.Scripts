@@ -1,4 +1,5 @@
-﻿using Tickblaze.Scripts.Api.Interfaces.Orders;
+﻿using Tickblaze.Scripts.Api.Adapters;
+using Tickblaze.Scripts.Api.Interfaces.Orders;
 
 namespace Tickblaze.Scripts.TradeManagementStrategies;
 
@@ -110,11 +111,18 @@ public class OcoTicks : TradeManagementStrategy
 		{
 			// TODO Add alert here when added to API
 			CancelOrder(order, "TMS aborted due to max risk settings");
+            Alert?.ShowDialog(AlertType.Bad, "TMS aborted due to max risk settings");
 			Stop();
 			return;
 		}
 
 		CancelOrder(order, "Order replaced by TMS", true);
+
+        if (Position is { Direction: var positionDirection } && positionDirection != order.Direction)
+        {
+            Alert?.ShowDialog(AlertType.Bad, "Can't submit TMS orders opposing current position");
+            return;
+        }
 
 		var takeProfits = Enumerable.Range(0, 2)
 			.Select(i => (Ticks: i == 0 ? FirstTakeProfitTicks : SecondTakeProfitTicks, SizePercent: i == 0 ? FirstTakeProfitSizePercent : SecondTakeProfitSizePercent))
