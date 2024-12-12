@@ -121,6 +121,7 @@ public class OcoTicks : TradeManagementStrategy
         if (Position is { Direction: var positionDirection } && positionDirection != order.Direction)
         {
             Alert?.ShowDialog(AlertType.Bad, "Can't submit TMS orders opposing current position");
+            Stop();
             return;
         }
 
