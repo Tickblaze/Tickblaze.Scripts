@@ -48,7 +48,7 @@ public class MaCrossover : CrossoverStrategyBase
 	public MaCrossover()
 	{
 		Name = "MA Crossover";
-		Description = "Moving Average [MA] - Crossover Strategy";
+		Description = "The Moving Average Crossover Strategy detects trends by tracking crossovers between fast and slow moving averages. A bullish crossover triggers a buy order, while a bearish crossover triggers a sell order, aiming to capture early trend changes.";
 	}
 
 	protected override void Initialize()
