@@ -6,22 +6,24 @@ namespace Tickblaze.Scripts.Strategies;
 
 public abstract class BaseStopsAndTargetsStrategy : Strategy
 {
-	[Parameter("Stop Loss Type")]
+	private const string GroupName = "Risk Management";
+
+	[Parameter("Stop Loss Type", GroupName = GroupName)]
 	public StopTargetDistanceType StopLossType { get; set; } = StopTargetDistanceType.Dollars;
 
-	[Parameter("Stop Loss"), NumericRange(0)]
+	[Parameter("Stop Loss", GroupName = GroupName), NumericRange(0)]
 	public double StopLoss { get; set; } = 0;
 
-	[Parameter("Take Profit Type")]
+	[Parameter("Take Profit Type", GroupName = GroupName)]
 	public StopTargetDistanceType TakeProfitType { get; set; } = StopTargetDistanceType.Dollars;
 
-	[Parameter("Take Profit"), NumericRange(0)]
+	[Parameter("Take Profit", GroupName = GroupName), NumericRange(0)]
 	public double TakeProfit { get; set; } = 0;
 
-	[Parameter("Position Sizing Strategy")]
+	[Parameter("Position Sizing Strategy", GroupName = GroupName)]
 	public SizingStrategy SizingStrategy { get; set; } = SizingStrategy.FixedQuantity;
 
-	[Parameter("Position Sizing Input"), NumericRange(0.00001)]
+	[Parameter("Position Sizing Input", GroupName = GroupName), NumericRange(0.00001)]
 	public double SizingStrategyInput { get; set; } = 1;
 
 	protected void PlaceStopLossAndTarget(IOrder order, double entryPrice, OrderDirection orderDirection)
@@ -30,23 +32,23 @@ public abstract class BaseStopsAndTargetsStrategy : Strategy
 		{
 			switch (StopLossType)
 			{
-			case StopTargetDistanceType.Dollars:
-				SetStopLossTicks(order, (int)Math.Max(StopLoss / (Symbol.TickValue * order.Quantity), 1), "SL");
-				break;
-			case StopTargetDistanceType.DollarsPerQuantity:
-				SetStopLossTicks(order, (int)Math.Max(StopLoss / Symbol.TickValue, 1), "SL");
-				break;
-			case StopTargetDistanceType.Ticks:
-				SetStopLossTicks(order, (int)Math.Max(StopLoss, 1), "SL");
-				break;
-			case StopTargetDistanceType.Points:
-				SetStopLossTicks(order, (int)Math.Max(StopLoss * Symbol.TicksPerPoint, 1), "SL");
-				break;
-			case StopTargetDistanceType.PercentOfPrice:
-				SetStopLossPercent(order, Math.Max(StopLoss, 0.0001), "SL");
-				break;
-			default:
-				throw new ArgumentOutOfRangeException();
+				case StopTargetDistanceType.Dollars:
+					SetStopLossTicks(order, (int)Math.Max(StopLoss / (Symbol.TickValue * order.Quantity), 1), "SL");
+					break;
+				case StopTargetDistanceType.DollarsPerQuantity:
+					SetStopLossTicks(order, (int)Math.Max(StopLoss / Symbol.TickValue, 1), "SL");
+					break;
+				case StopTargetDistanceType.Ticks:
+					SetStopLossTicks(order, (int)Math.Max(StopLoss, 1), "SL");
+					break;
+				case StopTargetDistanceType.Points:
+					SetStopLossTicks(order, (int)Math.Max(StopLoss * Symbol.TicksPerPoint, 1), "SL");
+					break;
+				case StopTargetDistanceType.PercentOfPrice:
+					SetStopLossPercent(order, Math.Max(StopLoss, 0.0001), "SL");
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
 			}
 		}
 
@@ -54,23 +56,23 @@ public abstract class BaseStopsAndTargetsStrategy : Strategy
 		{
 			switch (TakeProfitType)
 			{
-			case StopTargetDistanceType.Dollars:
-				SetTakeProfitTicks(order, (int)Math.Max(TakeProfit / (Symbol.TickValue * order.Quantity), 1), "TP");
-				break;
-			case StopTargetDistanceType.DollarsPerQuantity:
-				SetTakeProfitTicks(order, (int)Math.Max(TakeProfit / Symbol.TickValue, 1), "TP");
-				break;
-			case StopTargetDistanceType.Ticks:
-				SetTakeProfitTicks(order, (int)Math.Max(TakeProfit, 1), "TP");
-				break;
-			case StopTargetDistanceType.Points:
-				SetTakeProfitTicks(order, (int)Math.Max(TakeProfit * Symbol.TicksPerPoint, 1), "TP");
-				break;
-			case StopTargetDistanceType.PercentOfPrice:
-				SetTakeProfitPercent(order, Math.Max(TakeProfit, 0.0001), "TP");
-				break;
-			default:
-				throw new ArgumentOutOfRangeException();
+				case StopTargetDistanceType.Dollars:
+					SetTakeProfitTicks(order, (int)Math.Max(TakeProfit / (Symbol.TickValue * order.Quantity), 1), "TP");
+					break;
+				case StopTargetDistanceType.DollarsPerQuantity:
+					SetTakeProfitTicks(order, (int)Math.Max(TakeProfit / Symbol.TickValue, 1), "TP");
+					break;
+				case StopTargetDistanceType.Ticks:
+					SetTakeProfitTicks(order, (int)Math.Max(TakeProfit, 1), "TP");
+					break;
+				case StopTargetDistanceType.Points:
+					SetTakeProfitTicks(order, (int)Math.Max(TakeProfit * Symbol.TicksPerPoint, 1), "TP");
+					break;
+				case StopTargetDistanceType.PercentOfPrice:
+					SetTakeProfitPercent(order, Math.Max(TakeProfit, 0.0001), "TP");
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
 			}
 		}
 	}
@@ -90,7 +92,7 @@ public abstract class BaseStopsAndTargetsStrategy : Strategy
 			parameters[nameof(SizingStrategy)].Value = SizingStrategy.FixedQuantity;
 			parameters[nameof(SizingStrategyInput)].Value = 1;
 		}
-		
+
 		parameters[nameof(SizingStrategyInput)].Attributes.Name = SizingStrategy switch
 		{
 			SizingStrategy.FixedQuantity => "# Per Trade",
@@ -118,7 +120,7 @@ public abstract class BaseStopsAndTargetsStrategy : Strategy
 			entryQuantity = totalRisk / riskPerContract;
 		}
 
-		entryQuantity = entryQuantity.FloorToNearestMultiple((double) Symbol.MinimumVolume);
+		entryQuantity = entryQuantity.FloorToNearestMultiple((double)Symbol.MinimumVolume);
 		var exitQuantity = Position?.Quantity ?? 0;
 		return exitQuantity + entryQuantity;
 	}

@@ -2,6 +2,7 @@
 
 namespace Tickblaze.Scripts.Strategies;
 
+[System.ComponentModel.Browsable(false)]
 public class CrossoverStrategy : BaseStopsAndTargetsStrategy
 {
 	private const string FixedValueGroupName = "Fixed Value";

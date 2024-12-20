@@ -2,79 +2,30 @@
 
 namespace Tickblaze.Scripts.Strategies;
 
-public class RsiOverboughtOversold : BaseStopsAndTargetsStrategy
+public class RsiOverboughtOversold : OverboughtOversoldStrategyBase
 {
 	[NumericRange(1, int.MaxValue)]
-	[Parameter("RSI Period")]
-	public int RsiPeriod { get; set; } = 14;
+	[Parameter("Period")]
+	public int Period { get; set; } = 14;
 
-	[NumericRange(0, 100)]
-	[Parameter("RSI Overbought")]
-	public int RsiOverboughtValue { get; set; } = 70;
-
-	[NumericRange(0, 100)]
-	[Parameter("RSI Oversold")]
-	public int RsiOversoldValue { get; set; } = 30;
-
-	[Parameter("Short enabled?")]
-	public bool IsShortEnabled { get; set; } = true;
-
-	[Parameter("Long enabled?")]
-	public bool IsLongEnabled { get; set; } = true;
+	protected override ISeries<double> Series => _rsi.Result;
 
 	private RelativeStrengthIndex _rsi;
-
-	private bool firstBar = true;
 
 	public RsiOverboughtOversold()
 	{
 		Name = "RSI Overbought/Oversold";
-		Description = "A reversal strategy based on the Relative Strength Index (RSI) generating a long signal when the RSI falls below the oversold level and a short signal when it rises above the overbought level.";
+		Description = "Relative Strength Index [RSI] - Overbought/Oversold Strategy";
+		OverboughtLevel = 70;
+		OversoldLevel = 30;
 	}
 
 	protected override void Initialize()
 	{
-		_rsi = new RelativeStrengthIndex(Bars.Close, RsiPeriod, MovingAverageType.Simple, 1);
+		_rsi = new RelativeStrengthIndex(Bars.Close, Period, MovingAverageType.Simple, 1);
 		_rsi.Average.IsVisible = false;
-		_rsi.OverboughtLevel.Value = RsiOverboughtValue;
-		_rsi.OversoldLevel.Value = RsiOversoldValue;
+		_rsi.OverboughtLevel.Value = OverboughtLevel;
+		_rsi.OversoldLevel.Value = OversoldLevel;
 		_rsi.ShowOnChart = true;
-	}
-
-	protected override void OnBar(int index)
-	{
-		if (firstBar)
-		{
-			firstBar = false;
-			return;
-		}
-
-		var rsi = new[] { _rsi.Result[index], _rsi.Result[index - 1] };
-		if (rsi[1] >= RsiOversoldValue && RsiOversoldValue > rsi[0])
-		{
-			var comment = "Overbought";
-
-			if (IsLongEnabled)
-			{
-				TryEnterMarket(OrderDirection.Long, comment);
-			}
-			else if (Position?.Direction is OrderDirection.Short)
-			{
-				ClosePosition(comment);
-			}
-		}
-		else if (rsi[1] <= RsiOverboughtValue && RsiOverboughtValue < rsi[0])
-		{
-			var comment = "Overbought";
-
-			if (IsShortEnabled)
-			{
-				TryEnterMarket(OrderDirection.Short, comment);
-			}
-			else if (Position?.Direction is OrderDirection.Long)
-			{
-				ClosePosition(comment);
-			}
-		}
 	}
 }

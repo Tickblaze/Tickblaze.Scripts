@@ -2,7 +2,7 @@
 
 namespace Tickblaze.Scripts.Strategies;
 
-public class StochasticStrategy : BaseStopsAndTargetsStrategy
+public class StochOverboughtOversold : OverboughtOversoldStrategyBase
 {
 	[Parameter("%K Periods"), NumericRange(1, int.MaxValue)]
 	public int KPeriods { get; set; } = 9;
@@ -19,11 +19,7 @@ public class StochasticStrategy : BaseStopsAndTargetsStrategy
 	[Parameter("Output")]
 	public StochOutputType Output { get; set; } = StochOutputType.PercentK;
 
-	[Parameter("Overbought Level")]
-	public double OverboughtLevel { get; set; } = 80;
-
-	[Parameter("Oversold Level")]
-	public double OversoldLevel { get; set; } = 20;
+	protected override ISeries<double> Series => Output is StochOutputType.PercentK ? _stoch.PercentK : _stoch.PercentD;
 
 	public enum StochOutputType
 	{
@@ -36,11 +32,12 @@ public class StochasticStrategy : BaseStopsAndTargetsStrategy
 
 	private StochasticOscillator _stoch;
 
-	public StochasticStrategy()
+	public StochOverboughtOversold()
 	{
-		Name = "Stochastic Strategy";
-		ShortName = "Stoch";
-		Description = "Stochastic Oscillator [Stoch] - OB/OS Strategy";
+		Name = "Stochastic Overbought/Oversold";
+		Description = "Stochastic Oscillator [Stoch] - Overbought/Oversold Strategy";
+		OverboughtLevel = 80;
+		OversoldLevel = 20;
 	}
 
 	protected override void Initialize()
@@ -48,23 +45,5 @@ public class StochasticStrategy : BaseStopsAndTargetsStrategy
 		_stoch = new StochasticOscillator(KPeriods, KSlowing, DPeriods, SmoothingType) { ShowOnChart = true };
 		_stoch.OverboughtLevel.Value = OverboughtLevel;
 		_stoch.OversoldLevel.Value = OversoldLevel;
-	}
-
-	protected override void OnBar(int index)
-	{
-		if (index == 0)
-		{
-			return;
-		}
-
-		var stoch = Output is StochOutputType.PercentK ? _stoch.PercentK : _stoch.PercentD;
-		if (stoch[index] >= OverboughtLevel && stoch[index - 1] < OverboughtLevel)
-		{
-			TryEnterMarket(OrderDirection.Short);
-		}
-		else if (stoch[index] <= OversoldLevel && stoch[index - 1] > OversoldLevel)
-		{
-			TryEnterMarket(OrderDirection.Long);
-		}
 	}
 }
