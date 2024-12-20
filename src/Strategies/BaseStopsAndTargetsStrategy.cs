@@ -88,7 +88,7 @@ public abstract class BaseStopsAndTargetsStrategy : Strategy
 
 		if (StopLossType == StopTargetDistanceType.Dollars && SizingStrategy != SizingStrategy.FixedQuantity)
 		{
-			Alert?.ShowDialog(AlertType.Bad, "\"$\" stop loss type is incompatible with equity sizing strateiges. Reverting to fixed quantity sizing strategy.");
+			Alert?.ShowDialog(AlertType.Bad, "\"$\" stop loss type is incompatible with equity sizing strategies. Reverting to fixed quantity sizing strategy.");
 			parameters[nameof(SizingStrategy)].Value = SizingStrategy.FixedQuantity;
 			parameters[nameof(SizingStrategyInput)].Value = 1;
 		}
@@ -139,7 +139,7 @@ public abstract class BaseStopsAndTargetsStrategy : Strategy
 
 	protected void TryEnterMarket(OrderDirection direction, string comment = "")
 	{
-		if (Position?.Direction == direction)
+		if (Position != null && Position.Direction == direction && Position.Quantity != 0)
 		{
 			return;
 		}

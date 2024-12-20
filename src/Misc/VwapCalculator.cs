@@ -1,6 +1,6 @@
-﻿namespace Tickblaze.Scripts.Misc;
+namespace Tickblaze.Scripts.Misc;
 
-internal class VwapCalculator(BarSeries bars, ISymbol symbol)
+internal class VwapCalculator(BarSeries bars, ISymbol symbol, bool resetsAtOpen)
 {
 	private double CumulativeVolume => _closedCumulativeVolume + _curVolume;
 
@@ -44,7 +44,8 @@ internal class VwapCalculator(BarSeries bars, ISymbol symbol)
 		_curTypical = typicalPrice;
 
 		var currentSession = symbol.ExchangeCalendar.GetSession(bar.Time);
-		if (currentSession?.StartExchangeDateTime != _currentSession?.StartExchangeDateTime)
+		var reset = resetsAtOpen && currentSession?.StartExchangeDateTime != _currentSession?.StartExchangeDateTime;
+		if (reset)
 		{
 			_currentSession = currentSession;
 			_closedCumulativeVolume = 0;
@@ -56,7 +57,7 @@ internal class VwapCalculator(BarSeries bars, ISymbol symbol)
 		_lastCalculateIndex = index;
 
 		// On the close of any bar after the first, we append to our closed values
-		if (prevLastCalculatedIndex == index || index == 0 || prevLastCalculatedIndex == -1)
+		if (prevLastCalculatedIndex == index || index == 0 || reset || prevLastCalculatedIndex == -1)
 		{
 			return;
 		}

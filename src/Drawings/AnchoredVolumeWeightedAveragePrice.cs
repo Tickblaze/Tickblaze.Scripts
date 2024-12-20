@@ -152,7 +152,7 @@ public class AnchoredVolumeWeightedAveragePrice : Drawing
 		if (_fromIndex != fromIndex)
 		{
 			_fromIndex = fromIndex;
-			_vwapCalculator = new VwapCalculator(Bars, Symbol);
+			_vwapCalculator = new VwapCalculator(Bars, Symbol, false);
 			_lastCalculatedIndex = fromIndex - 1;
 		}
 
