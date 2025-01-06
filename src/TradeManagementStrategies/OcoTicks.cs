@@ -49,6 +49,18 @@ public class OcoTicks : TradeManagementStrategy
 	{
 		get
 		{
+			// Don't stop if we're still waiting for our entry order to be filled.
+			if (_entryOrder?.Status is OrderStatus.Pending)
+			{
+				return false;
+			}
+			
+			// Stop immediately if there is no break even.
+			if (!BreakEvenValid)
+			{
+				return true;
+			}
+			
 			// If we're waiting for a break even, stop if our position is no longer valid and all of our entry orders were submitted and reached a final state
 			if (Position?.Direction != (DirectionAsInt == 1 ? OrderDirection.Long : OrderDirection.Short) && _orderData.Count > 0 && _orderData.TrueForAll(group => group.Entry.Status != OrderStatus.Pending))
 			{
@@ -60,6 +72,7 @@ public class OcoTicks : TradeManagementStrategy
 	}
 
 	private readonly List<OrderData> _orderData = [];
+	private IOrder _entryOrder;
 
 	public OcoTicks()
 	{
@@ -98,6 +111,8 @@ public class OcoTicks : TradeManagementStrategy
 
 	protected override void OnEntryOrder(IOrder order)
 	{
+		_entryOrder = order;
+		
 		DirectionAsInt = order.Direction is OrderDirection.Long ? 1 : -1;
 
 		var quantity = CalculateQuantity(PositionSizeType, PositionSize, StopLossTicks, RoundingMode.Down);
