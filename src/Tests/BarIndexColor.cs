@@ -4,14 +4,23 @@ using System.Diagnostics;
 namespace Tickblaze.Scripts.Tests;
 
 [Browsable(false)]
-public class BarIndexColor : Indicator
+public partial class BarIndexColor : Indicator
 {
+	[Parameter("Bar width"), NumericRange(0, 1)]
+	public double BarWidth { get; set; } = 0.5;
+
 	[Plot("Bar Index")]
 	public PlotSeries Result { get; set; } = new(Color.Transparent, PlotStyle.Histogram);
 
 	private readonly Color[] _colors = [Color.Red, Color.Green, Color.Blue, Color.White];
 	private int _index, _colorIndex;
 	private int _lastIndex = -1;
+	private bool _barWidthSet;
+
+	protected override void Initialize()
+	{
+
+	}
 
 	protected override void Calculate(int index)
 	{
@@ -52,6 +61,15 @@ public class BarIndexColor : Indicator
 			{
 				_colorIndex = 0;
 			}
+		}
+	}
+
+	public override void OnRender(IDrawingContext context)
+	{
+		if (_barWidthSet is false)
+		{
+			Chart.BarWidth = BarWidth;
+			_barWidthSet = true;
 		}
 	}
 }

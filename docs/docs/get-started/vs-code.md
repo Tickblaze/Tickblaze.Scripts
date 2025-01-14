@@ -5,14 +5,14 @@ Follow these steps to create your first custom indicator for Tickblaze using VS 
 > Prerequisites
 >
 > - [VS Code](https://code.visualstudio.com/)
-> - Install [.NET SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) 8.0
+> - Install [.NET SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) 9.0
 
 ### 1. Create a New Class Library
 
-Create a new class class library targeting .NET 8.0:
+Create a new class class library targeting .NET 9.0:
 
 ```
-dotnet new classlib -n CustomIndicator -f net8.0
+dotnet new classlib -n CustomIndicator -f net9.0
 ```
 
 And navigate to its directory:

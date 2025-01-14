@@ -1,18 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tickblaze.Scripts.Api" Version="2.0.0.45-pre.*" GeneratePathProperty="true" />
+    <PackageReference Include="Tickblaze.Scripts.Api" Version="2.0.0.48-pre.*" GeneratePathProperty="true" />
   </ItemGroup>
 
   <Target Name="CopyPackageFilesForDocs" AfterTargets="Build">
     <ItemGroup>
-      <SourceFiles Include="$(PkgTickblaze_Scripts_Api)\lib\net8.0\*.dll" />
-      <SourceFiles Include="$(PkgTickblaze_Scripts_Api)\lib\net8.0\*.xml" />
+      <SourceFiles Include="$(PkgTickblaze_Scripts_Api)\lib\net9.0\*.dll" />
+      <SourceFiles Include="$(PkgTickblaze_Scripts_Api)\lib\net9.0\*.xml" />
     </ItemGroup>
     <Copy SourceFiles="@(SourceFiles)" DestinationFolder="..\docs\src\" SkipUnchangedFiles="true" />
   </Target>

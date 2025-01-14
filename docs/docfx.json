@@ -5,6 +5,7 @@
       "src": [
         {
           "files": [
+			"src/Tickblaze.Core.dll",
             "src/Tickblaze.Scripts.Api.dll"
           ]
         }

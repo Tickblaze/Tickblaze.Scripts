@@ -4,7 +4,7 @@ Follow these steps to create your first custom indicator for Tickblaze using Vis
 
 > Prerequisites
 > - [Visual Studio](https://visualstudio.microsoft.com/)
-> - Install [.NET SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) 8.0
+> - Install [.NET SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) 9.0
 
 ### 1. Create a New Solution and Project
 
@@ -19,7 +19,7 @@ Follow these steps to create your first custom indicator for Tickblaze using Vis
    - Choose a **location** for your project.
    - Set the **Solution name** as desired.
    - Click **Next**.
-   - Select the **.NET 8.0** framework
+   - Select the **.NET 9.0** framework
    - Click **Create**.
 
 ### 2. Add a NuGet Package

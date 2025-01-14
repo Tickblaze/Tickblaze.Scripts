@@ -4,10 +4,10 @@ Follow these steps to set up your environment and create your first custom indic
 
 ### 1. Create a New Class Library
 
-Create a new class class library targeting .NET 8.0:
+Create a new class class library targeting .NET 9.0:
 
 ```
-dotnet new classlib -n CustomIndicator -f net8.0
+dotnet new classlib -n CustomIndicator -f net9.0
 ```
 
 And navigate to its directory:
