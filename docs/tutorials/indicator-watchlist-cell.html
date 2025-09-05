@@ -115,29 +115,29 @@ public class WatchlistIndicator : Indicator
 </ul>
 <hr>
 <h2 id="step-2-override-configurewatchlistcell">Step 2: Override <code>ConfigureWatchlistCell</code></h2>
-<p>To customize the watchlist cell, override the <code>ConfigureWatchlistCell</code> method. This method provides a <code>WatchlistCellString</code> object, which allows you to set the displayed text, background color, and foreground color.</p>
-<pre><code class="lang-csharp">public override void ConfigureWatchlistCell(WatchlistCellString cellString)
+<p>To customize the watchlist cell, override the <code>ConfigureWatchlistCell</code> method. This method provides a <code>WatchlistCellValue</code> object, which allows you to set the value, displayed text, background color, and foreground color.</p>
+<pre><code class="lang-csharp">public override void ConfigureWatchlistCell(WatchlistCellValue cellValue)
 {
     if (Result.Last() &gt; 0)
     {
-        cellString.Value = &quot;Bullish&quot;;
-        cellString.Background = Color.Green;
-        cellString.Foreground = Color.Black;
+        cellValue.DisplayValue = &quot;Bullish&quot;;
+        cellValue.Background = Color.Green;
+        cellValue.Foreground = Color.Black;
     }
     else
     {
-        cellString.Value = &quot;Bearish&quot;;
-        cellString.Background = Color.Red;
-        cellString.Foreground = Color.White;
+        cellValue.DisplayValue = &quot;Bearish&quot;;
+        cellValue.Background = Color.Red;
+        cellValue.Foreground = Color.White;
     }
 }
 </code></pre>
 <h3 id="explanation-1">Explanation:</h3>
 <ul>
 <li><code>Result.Last()</code>: Retrieves the most recent value of the <code>Result</code> series.</li>
-<li><code>cellString.Value</code>: Sets the text displayed in the watchlist cell.</li>
-<li><code>cellString.Background</code>: Sets the background color of the cell.</li>
-<li><code>cellString.Foreground</code>: Sets the text color of the cell.</li>
+<li><code>cellValue.DisplayValue</code>: Sets the text displayed in the watchlist cell.</li>
+<li><code>cellValue.Background</code>: Sets the background color of the cell.</li>
+<li><code>cellValue.Foreground</code>: Sets the text color of the cell.</li>
 </ul>
 <p>In this example:</p>
 <ul>
@@ -162,19 +162,19 @@ public class WatchlistIndicator : Indicator
         Result[index] = bar.Close &gt; bar.Open ? 1 : -1;
     }
 
-    public override void ConfigureWatchlistCell(WatchlistCellString cellString)
+    public override void ConfigureWatchlistCell(WatchlistCellValue cellValue)
     {
         if (Result.Last() &gt; 0)
         {
-            cellString.Value = &quot;Bullish&quot;;
-            cellString.Background = Color.Green;
-            cellString.Foreground = Color.Black;
+            cellValue.DisplayValue = &quot;Bullish&quot;;
+            cellValue.Background = Color.Green;
+            cellValue.Foreground = Color.Black;
         }
         else
         {
-            cellString.Value = &quot;Bearish&quot;;
-            cellString.Background = Color.Red;
-            cellString.Foreground = Color.White;
+            cellValue.DisplayValue = &quot;Bearish&quot;;
+            cellValue.Background = Color.Red;
+            cellValue.Foreground = Color.White;
         }
     }
 }
