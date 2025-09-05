@@ -34,31 +34,31 @@ public class WatchlistIndicator : Indicator
 ---
 
 ## Step 2: Override `ConfigureWatchlistCell`
-To customize the watchlist cell, override the `ConfigureWatchlistCell` method. This method provides a `WatchlistCellString` object, which allows you to set the displayed text, background color, and foreground color.
+To customize the watchlist cell, override the `ConfigureWatchlistCell` method. This method provides a `WatchlistCellValue` object, which allows you to set the value, displayed text, background color, and foreground color.
 
 ```csharp
-public override void ConfigureWatchlistCell(WatchlistCellString cellString)
+public override void ConfigureWatchlistCell(WatchlistCellValue cellValue)
 {
     if (Result.Last() > 0)
     {
-        cellString.Value = "Bullish";
-        cellString.Background = Color.Green;
-        cellString.Foreground = Color.Black;
+        cellValue.DisplayValue = "Bullish";
+        cellValue.Background = Color.Green;
+        cellValue.Foreground = Color.Black;
     }
     else
     {
-        cellString.Value = "Bearish";
-        cellString.Background = Color.Red;
-        cellString.Foreground = Color.White;
+        cellValue.DisplayValue = "Bearish";
+        cellValue.Background = Color.Red;
+        cellValue.Foreground = Color.White;
     }
 }
 ```
 
 ### Explanation:
 - `Result.Last()`: Retrieves the most recent value of the `Result` series.
-- `cellString.Value`: Sets the text displayed in the watchlist cell.
-- `cellString.Background`: Sets the background color of the cell.
-- `cellString.Foreground`: Sets the text color of the cell.
+- `cellValue.DisplayValue`: Sets the text displayed in the watchlist cell.
+- `cellValue.Background`: Sets the background color of the cell.
+- `cellValue.Foreground`: Sets the text color of the cell.
 
 In this example:
 - If the last value of `Result` is greater than `0`, the cell displays "Bullish" with a green background and black text.
@@ -85,19 +85,19 @@ public class WatchlistIndicator : Indicator
         Result[index] = bar.Close > bar.Open ? 1 : -1;
     }
 
-    public override void ConfigureWatchlistCell(WatchlistCellString cellString)
+    public override void ConfigureWatchlistCell(WatchlistCellValue cellValue)
     {
         if (Result.Last() > 0)
         {
-            cellString.Value = "Bullish";
-            cellString.Background = Color.Green;
-            cellString.Foreground = Color.Black;
+            cellValue.DisplayValue = "Bullish";
+            cellValue.Background = Color.Green;
+            cellValue.Foreground = Color.Black;
         }
         else
         {
-            cellString.Value = "Bearish";
-            cellString.Background = Color.Red;
-            cellString.Foreground = Color.White;
+            cellValue.DisplayValue = "Bearish";
+            cellValue.Background = Color.Red;
+            cellValue.Foreground = Color.White;
         }
     }
 }
