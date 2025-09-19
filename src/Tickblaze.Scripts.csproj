@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tickblaze.Scripts.Api" Version="2.0.0.71-pre.*" GeneratePathProperty="true" />
+    <PackageReference Include="Tickblaze.Scripts.Api" Version="2.0.0.74-pre.*" GeneratePathProperty="true" />
   </ItemGroup>
 
   <Target Name="CopyPackageFilesForDocs" AfterTargets="Build">

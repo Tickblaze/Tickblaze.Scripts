@@ -1,4 +1,4 @@
-namespace Tickblaze.Scripts.OptimizationAlgorithms;
+﻿namespace Tickblaze.Scripts.OptimizationAlgorithms;
 
 public class BruteForce : OptimizationAlgorithm
 {
