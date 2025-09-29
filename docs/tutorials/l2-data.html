@@ -91,7 +91,7 @@
 <h2 id="step-1-create-basic-dom-indicator-structure">Step 1: Create Basic DOM Indicator Structure</h2>
 <pre><code class="lang-csharp">public partial class DomIndicator : Indicator
 {
-    private IDom _depthOfMarket;
+    private Tickblaze.Core.Data.IDom _depthOfMarket;
 
     protected override void Initialize()
     {
@@ -121,13 +121,13 @@
     // Draw bid levels (blue)
     foreach (var bid in bids.Enumerate(minPrice, maxPrice))
     {
-        DrawPriceLevel(context, bid, Colors.Blue);
+        DrawPriceLevel(context, bid, Color.Blue);
     }
 
     // Draw ask levels (red)
     foreach (var ask in asks.Enumerate(minPrice, maxPrice))
     {
-        DrawPriceLevel(context, ask, Colors.Red);
+        DrawPriceLevel(context, ask, Color.Red);
     }
 }
 
