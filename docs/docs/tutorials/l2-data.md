@@ -7,7 +7,7 @@ This tutorial shows how to access and visualize real-time market depth (order bo
 ```csharp
 public partial class DomIndicator : Indicator
 {
-    private IDom _depthOfMarket;
+    private Tickblaze.Core.Data.IDom _depthOfMarket;
 
     protected override void Initialize()
     {
@@ -40,13 +40,13 @@ public override void OnRender(IDrawingContext context)
     // Draw bid levels (blue)
     foreach (var bid in bids.Enumerate(minPrice, maxPrice))
     {
-        DrawPriceLevel(context, bid, Colors.Blue);
+        DrawPriceLevel(context, bid, Color.Blue);
     }
 
     // Draw ask levels (red)
     foreach (var ask in asks.Enumerate(minPrice, maxPrice))
     {
-        DrawPriceLevel(context, ask, Colors.Red);
+        DrawPriceLevel(context, ask, Color.Red);
     }
 }
 
