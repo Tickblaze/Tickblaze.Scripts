@@ -21,12 +21,12 @@ This tutorial will walk you through creating and adding custom UI elements to yo
     ```csharp
     public partial class MyToolbarButton : Indicator
     {
-        private Button _button;
+        private System.Windows.Controls.Button _button;
 
         public override object? CreateChartToolbarMenuItem()
         {
-            _button = new Button { Content = "Click Me!" };
-            _button.Click += (s, e) => MessageBox.Show("Button clicked!");
+            _button = new System.Windows.Controls.Button { Content = "Click Me!" };
+            _button.Click += (s, e) => System.Windows.MessageBox.Show("Button clicked!");
 
             return _button;
         }
