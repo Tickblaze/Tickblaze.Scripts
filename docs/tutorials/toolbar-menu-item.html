@@ -105,12 +105,12 @@
 <li><p>Create an indicator or strategy and override the <code>CreateChartToolbarMenuItem()</code> method that returns a WPF control:</p>
 <pre><code class="lang-csharp">public partial class MyToolbarButton : Indicator
 {
-    private Button _button;
+    private System.Windows.Controls.Button _button;
 
     public override object? CreateChartToolbarMenuItem()
     {
-        _button = new Button { Content = &quot;Click Me!&quot; };
-        _button.Click += (s, e) =&gt; MessageBox.Show(&quot;Button clicked!&quot;);
+        _button = new System.Windows.Controls.Button { Content = &quot;Click Me!&quot; };
+        _button.Click += (s, e) =&gt; System.Windows.MessageBox.Show(&quot;Button clicked!&quot;);
 
         return _button;
     }
